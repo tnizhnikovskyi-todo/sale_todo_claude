@@ -37,9 +37,17 @@ description: >
   із шапки, відкриті `Q-N`
 - `повнота_даних_[компанія].md` → `Read` за потреби
 - **Історичні аналоги** → `mcp__odoo-mcp__odoo_search_read` по `crm.lead`,
-  домен `[["stage_id.name","=","Won"], ["ata_clients_industry_ids","=",<галузь>]]`,
-  поля `name`, `expected_revenue`, `ata_employee_count`, `ata_license_count`,
-  `date_closed`
+  домен `[["stage_id.is_won","=",true], ["team_id.name","=","ODOO"],
+  ["ata_clients_industry_ids","=",<галузь>]]`, поля `name`, `expected_revenue`,
+  `ata_employee_count`, `ata_license_count`, `date_closed`
+
+  **Фільтр команди тут не косметика.** Стадія Won у базі спільна для всіх команд:
+  у ній 161 угода, з яких **наших 78, а 83 — BAS, WEB, IT-Enterprise, Huntbot
+  і передані партнерам**. Аналог із проєкту BAS не описує обсяг робіт на Odoo —
+  ні годинами, ні сумою. Без `team_id` половина «історичних аналогів» буде чужою,
+  і це не видно в результаті: назви компаній виглядають однаково правдоподібно.
+  Так само `stage_id.is_won` надійніше за `stage_id.name = "Won"`: прапорець
+  не залежить від того, як стадію переназвуть
 
 **Спільні конвенції — прочитай перед першим кроком:** `references/skill_conventions.md`
 (мова за регістром · обсяг виходу · ідемпотентність · поведінка при збої · ліміти входу ·
