@@ -51,8 +51,10 @@ description: >
 фіксація погодження)
 
 **Довідники — прочитай ОБА:**
-- `references/deal_journal_template.md` — інваріант 8 про валюту, категорії `G-N`
-- `references/registers.md` — Humizer і фільтр чутливого
+- `references/deal_journal_template.md` — **розділ 2 (інваріанти, особливо 8 про
+  валюту), 5 (категорії `G-N`)**; із шаблону — **3 «Профіль угоди»**, **3а «Журнал
+  записів у картку»** і **13 «Версії документів»**
+- `references/registers.md` — **розділи 3 (Humizer) і 4 (фільтр чутливого)**
 
 **Дія в Odoo:**
 - `mcp__odoo-mcp__odoo_write` по `crm.lead` — тільки поля з таблиці Кроку 4
