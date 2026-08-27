@@ -33,9 +33,21 @@ jobs:
           # робочі артефакти з даними замовників у git не потрапляють (registers.md §5а)
           pats = ['журнал_продажу_*', 'досьє_передачі_*', 'КП_*.docx', 'розриви_*.docx',
                   'оцінка_проєкту_*.docx', 'оцінка_дискавері_*.docx', 'знімок_демо_*',
-                  'лист_після_*', 'аргументація_захисту_*', 'підсумок_захисту_*']
+                  'лист_після_*', 'аргументація_захисту_*', 'підсумок_захисту_*',
+                  'аналіз_втрат_*', 'розморозка_*', 'анкета_*.docx']
           found = [f for p in pats for f in glob.glob(f'**/{p}', recursive=True)]
           for f in found: print('✗ артефакт із даними замовника в репозиторії:', f)
-          print('клієнтські дані:', 'ок' if not found else 'порушення')
-          sys.exit(1 if found else 0)
+
+          # ПІБ у прикладах: роль у дужках можна, імʼя — ні (skill_conventions §1)
+          import re
+          name_like = re.compile(r'(?<![А-ЯІЇЄҐа-яіїєґ])(?:[А-ЯІЇЄҐ][а-яіїєґ]{2,}\s+[А-ЯІЇЄҐ][а-яіїєґ]{2,}(?:енко|ук|юк|ський|ська|ов|ова|ін|іна|ій|ко))')
+          leaks = []
+          for f in glob.glob('shared/examples/*.md'):
+              for n, line in enumerate(open(f, encoding='utf-8'), 1):
+                  if name_like.search(line):
+                      leaks.append(f'{f}:{n}')
+          for l in leaks: print('✗ схоже на ПІБ у довіднику прикладів:', l)
+          bad = found or leaks
+          print('клієнтські дані:', 'ок' if not bad else 'порушення')
+          sys.exit(1 if bad else 0)
           PY
