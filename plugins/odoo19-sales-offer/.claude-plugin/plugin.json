@@ -3,7 +3,7 @@
   "name": "odoo19-sales-offer",
   "displayName": "Odoo 19 · Продажі · КП і передача",
   "version": "0.1.0",
-  "description": "Фаза 0, стадії S5-S7. Чотири скіли: фіналізація пакета і КП, аргументація до захисту КП, підсумок захисту, досьє передачі як вхід у sales-handover-analyzer.",
+  "description": "Фаза 0, стадії Proposition – Contract signing. П'ять скілів: фіналізація пакета і КП, аргументація до захисту КП, підсумок захисту, аналіз патернів утрат по галузі з архіву CRM, досьє передачі як вхід у sales-handover-analyzer.",
   "author": {
     "name": "ToDo"
   },

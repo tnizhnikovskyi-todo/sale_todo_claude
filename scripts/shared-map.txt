@@ -8,6 +8,7 @@ registers.md \
   plugins/odoo19-sales-prep/skills/client-followup-writer \
   plugins/odoo19-sales-prep/skills/data-completeness-scorer \
   plugins/odoo19-sales-prep/skills/preliminary-estimate \
+  plugins/odoo19-sales-prep/skills/deal-revival-check \
   plugins/odoo19-sales-prep/skills/demo-build-plan \
   plugins/odoo19-sales-demo/skills/demo-base-builder \
   plugins/odoo19-sales-demo/skills/demo-runbook \
@@ -18,16 +19,19 @@ registers.md \
   plugins/odoo19-sales-offer/skills/offer-finalizer \
   plugins/odoo19-sales-offer/skills/defence-brief \
   plugins/odoo19-sales-offer/skills/defence-debrief \
-  plugins/odoo19-sales-offer/skills/handover-dossier-builder
+  plugins/odoo19-sales-offer/skills/handover-dossier-builder \
+  plugins/odoo19-sales-offer/skills/loss-pattern-analyzer
 
 # Контракт журналу потрібен КОЖНОМУ, хто журнал читає або пише — інакше скіл
-# не може дотримати правил ID, статусів і реєстрів. Не має його тільки
-# brief-prep-pack: він працює до того, як журнал існує.
+# не може дотримати правил ID, статусів і реєстрів. Не мають його двоє:
+# brief-prep-pack — працює до того, як журнал існує;
+# loss-pattern-analyzer — працює по галузі, а не по угоді, і журналу не бачить.
 deal_journal_template.md \
   plugins/odoo19-sales-prep/skills/brief-transcript-analyzer \
   plugins/odoo19-sales-prep/skills/client-followup-writer \
   plugins/odoo19-sales-prep/skills/data-completeness-scorer \
   plugins/odoo19-sales-prep/skills/preliminary-estimate \
+  plugins/odoo19-sales-prep/skills/deal-revival-check \
   plugins/odoo19-sales-prep/skills/demo-build-plan \
   plugins/odoo19-sales-demo/skills/demo-base-builder \
   plugins/odoo19-sales-demo/skills/demo-runbook \
@@ -43,7 +47,7 @@ deal_journal_template.md \
 handover_contract.md \
   plugins/odoo19-sales-offer/skills/handover-dossier-builder
 
-# Спільні конвенції — усім шістнадцяти без винятку.
+# Спільні конвенції — усім вісімнадцяти без винятку.
 skill_conventions.md \
   plugins/odoo19-sales-demo/skills/client-questions-pack \
   plugins/odoo19-sales-demo/skills/demo-base-builder \
@@ -60,4 +64,6 @@ skill_conventions.md \
   plugins/odoo19-sales-prep/skills/client-followup-writer \
   plugins/odoo19-sales-prep/skills/data-completeness-scorer \
   plugins/odoo19-sales-prep/skills/demo-build-plan \
-  plugins/odoo19-sales-prep/skills/preliminary-estimate
+  plugins/odoo19-sales-prep/skills/preliminary-estimate \
+  plugins/odoo19-sales-prep/skills/deal-revival-check \
+  plugins/odoo19-sales-offer/skills/loss-pattern-analyzer
