@@ -23,6 +23,8 @@ Arial, заголовки розділів оранжеві, шапка табл
     ---                          тонка лінія
     [[PAGEBREAK]]                розрив сторінки
     [[LOGO]]                     логотип ToDo, центр
+    [[INCLUDE:шлях.md]]          вставити файл дослівно (стабільні блоки КП
+                                 з assets/docx-boilerplate/)
     **жирний** *курсив*          усередині абзацу, пункту або клітинки
 
 Усе інше — помилка: скрипт падає з номером рядка, а не тихо ковтає розмітку.
@@ -181,6 +183,34 @@ def logo(tpl):
             '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>')
 
 
+def strip_comments(md):
+    """HTML-комментарі з boilerplate-файлів у документ не потрапляють."""
+    return re.sub(r'<!--.*?-->', '', md, flags=re.S)
+
+
+def expand_includes(md, base, depth=0):
+    """[[INCLUDE:шлях]] — вставка стабільного блоку дослівно, без переказу.
+
+    Шлях відносний до кореня репозиторію. Вкладеність до трьох рівнів: глибше —
+    ознака циклу, і краще впасти, ніж зациклитись."""
+    if depth > 3:
+        raise SystemExit('[[INCLUDE]]: вкладеність понад три рівні — схоже на цикл')
+    out = []
+    for n, ln in enumerate(md.split('\n'), 1):
+        m = re.match(r'^\s*\[\[INCLUDE:([^\]]+)\]\]\s*$', ln)
+        if not m:
+            out.append(ln); continue
+        rel = m.group(1).strip()
+        if rel.startswith('/') or '..' in rel:
+            raise SystemExit(f'рядок {n}: [[INCLUDE]] бере лише шляхи в репозиторії')
+        path = os.path.join(base, rel)
+        if not os.path.isfile(path):
+            raise SystemExit(f'рядок {n}: [[INCLUDE]] не знайшов {rel}')
+        inc = strip_comments(open(path, encoding='utf-8').read())
+        out.append(expand_includes(inc, base, depth + 1))
+    return '\n'.join(out)
+
+
 def convert(md, tpl):
     body, i, lines = [], 0, md.split('\n')
     while i < len(lines):
@@ -195,6 +225,19 @@ def convert(md, tpl):
             body.append(logo(tpl)); i += 1; continue
         if s == '---':
             body.append(para('', rule=True, sz=2)); i += 1; continue
+
+        if re.match(r'^#{6,}', s):
+            raise SystemExit(f'рядок {i+1}: заголовків глибше пʼятого рівня немає — '
+                             'перебудуй структуру, а не додавай рівень')
+        if re.search(r'!\[', s):
+            raise SystemExit(f'рядок {i+1}: зображень у клієнтських документах немає, '
+                             'окрім логотипа через [[LOGO]]')
+        if re.search(r'(?<!!)\[[^\]]+\]\([^)]+\)', s):
+            raise SystemExit(f'рядок {i+1}: markdown-посилань немає — пиши адресу текстом, '
+                             'клієнт читає документ у Word, а не в браузері')
+        if re.match(r'^\[\[(?!LOGO\]\]|PAGEBREAK\]\]|INCLUDE:)', s):
+            raise SystemExit(f'рядок {i+1}: невідома директива {s[:40]} — '
+                             'є тільки [[LOGO]], [[PAGEBREAK]], [[INCLUDE:шлях]]')
 
         m = re.match(r'(#{1,5})\s+(.*)$', s)
         if m:
@@ -233,14 +276,19 @@ def convert(md, tpl):
             i += 1; continue
 
         if s.startswith('|'):
-            rows, j = [], i
+            rows, j, sep = [], i, False
             while j < len(lines) and lines[j].strip().startswith('|'):
                 cells = [c.strip() for c in lines[j].strip().strip('|').split('|')]
-                if not all(re.fullmatch(r':?-{2,}:?', c) for c in cells if c):
+                if all(re.fullmatch(r':?-{2,}:?', c) for c in cells if c):
+                    sep = True
+                else:
                     rows.append(cells)
                 j += 1
+            if not sep:
+                raise SystemExit(f'рядок {i+1}: таблиця без рядка-роздільника `|---|`. '
+                                 'Без нього не видно, який рядок є шапкою')
             if len(rows) < 2:
-                raise SystemExit(f'рядок {i+1}: таблиця без рядка-роздільника або без даних')
+                raise SystemExit(f'рядок {i+1}: у таблиці немає жодного рядка даних')
             body.append(table(rows)); i = j; continue
 
         body.append(para(s, space_after=60))
@@ -258,7 +306,9 @@ def main():
     tpl = os.path.abspath(a.template)
     if not os.path.isdir(tpl):
         raise SystemExit(f'немає шаблона: {tpl}')
-    md = open(a.src, encoding='utf-8').read()
+    repo = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    md = strip_comments(open(a.src, encoding='utf-8').read())
+    md = expand_includes(md, repo)
 
     doc = (f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
            f'<w:document {NS}><w:body>{convert(md, tpl)}{SECT}</w:body></w:document>')
