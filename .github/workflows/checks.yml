@@ -23,25 +23,8 @@ jobs:
       - name: Конвейєр .docx — фікстури і негативні кейси
         run: ./scripts/test-docx.sh
 
-      - name: Валідність манифестів плагінів
-        run: |
-          python3 - <<'PY'
-          import json, glob, sys
-          bad = 0
-          m = json.load(open('.claude-plugin/marketplace.json'))
-          names = {p['name'] for p in m['plugins']}
-          for f in glob.glob('plugins/*/.claude-plugin/plugin.json'):
-              p = json.load(open(f))
-              if p['name'] not in names:
-                  print(f'✗ {p["name"]} немає в marketplace.json'); bad = 1
-              if p['version'] != m['version']:
-                  print(f'✗ {p["name"]}: версія {p["version"]} ≠ версії маркетплейсу {m["version"]}'); bad = 1
-          for n in names:
-              if not glob.glob(f'plugins/{n}/.claude-plugin/plugin.json'):
-                  print(f'✗ у marketplace.json є {n}, а плагіна немає'); bad = 1
-          print('манифести:', 'ок' if not bad else 'порушення')
-          sys.exit(bad)
-          PY
+      - name: Манифести узгоджені
+        run: ./scripts/check-manifests.sh
 
       - name: Клієнтських даних у репозиторії немає
         run: |

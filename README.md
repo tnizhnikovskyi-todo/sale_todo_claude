@@ -13,6 +13,25 @@
 Носій стану, який фаза віддає далі: `журнал_продажу_[компанія].md` → `досьє_передачі_[компанія].md`
 → вхід у `sales-handover-analyzer`.
 
+## Як поставити
+
+```bash
+claude plugin marketplace add tnizhnikovskyi-todo/sale_todo_claude
+claude plugin install odoo19-sales-prep@todo-odoo19-sales
+claude plugin install odoo19-sales-demo@todo-odoo19-sales
+claude plugin install odoo19-sales-offer@todo-odoo19-sales
+```
+
+У TUI те саме робиться через `/plugin`. Оновити після змін у репозиторії —
+`claude plugin marketplace update todo-odoo19-sales`.
+
+Плагіни можна ставити окремо: `prep` працює самостійно, `demo` очікує журнал
+від `prep`, `offer` — журнал і пакет від попередніх двох.
+
+**Авторам** перед комітом: `claude plugin validate .` і `claude plugin validate plugins/<плагін>`
+— це власний валідатор Claude Code, він перевіряє манифести, скіли, агенти
+й команди. Обидва виклики загорнуті в `./scripts/check-manifests.sh`.
+
 ## Плагіни
 
 | Плагін | Стадії воронки | Скіли |
@@ -48,6 +67,7 @@
 ./scripts/sync-shared.sh    # розкласти копії по скілах
 ./scripts/check-shared.sh   # перевірити, що копії не правили руками
 ./scripts/check-skills.sh   # перевірити SKILL.md на конвенції дому
+./scripts/check-manifests.sh # манифести узгоджені між собою і з деревом каталогів
 
 python3 scripts/make-docx.py чернетка.md вихід.docx --title "…"   # зібрати клієнтський .docx
 python3 scripts/check-docx.py вихід.docx                          # перевірити стиль .docx
