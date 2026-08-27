@@ -40,6 +40,10 @@ description: >
 - `mcp__odoo-mcp__odoo_create`, `mcp__odoo-mcp__odoo_write`, `mcp__odoo-mcp__odoo_execute`
 - `mcp__odoo-mcp__odoo_get_fields` — перед створенням записів у незнайомій моделі
 
+**Спільні конвенції — прочитай перед першим кроком:** `references/skill_conventions.md`
+(мова за регістром · обсяг виходу · ідемпотентність · поведінка при збої · ліміти входу ·
+фіксація погодження)
+
 **Довідник:** `references/registers.md` — розділ 5 «Межа дії скіла».
 **Прочитай перед першим записом.**
 

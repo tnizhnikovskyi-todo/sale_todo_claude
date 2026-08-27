@@ -40,6 +40,10 @@ description: >
   поля `name`, `expected_revenue`, `ata_employee_count`, `ata_license_count`,
   `date_closed`
 
+**Спільні конвенції — прочитай перед першим кроком:** `references/skill_conventions.md`
+(мова за регістром · обсяг виходу · ідемпотентність · поведінка при збої · ліміти входу ·
+фіксація погодження)
+
 **Довідники:** `references/deal_journal_template.md` (розділи 4 і 5),
 `references/registers.md` (розділ 6 «Чого не вигадуємо»).
 

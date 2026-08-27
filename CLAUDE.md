@@ -9,12 +9,15 @@
 
 - `shared/deal_journal_template.md` — журнал продажу, реєстри, ID, коефіцієнт
 - `shared/registers.md` — регістри артефактів, Humizer, фільтр чутливого, межа дії
+- `shared/skill_conventions.md` — вісім спільних конвенцій: приклади, мова, обсяг,
+  ідемпотентність, збої, ліміти, погодження, evals
 - `shared/handover_contract.md` — стик із треком впровадження
 
 ## Спільні файли
 
 Правити **тільки** `shared/`. Копії в `plugins/*/skills/*/references/` генеруються
-`scripts/sync-shared.sh` і несуть шапку «ЗГЕНЕРОВАНО». Після зміни `shared/` —
+`scripts/sync-shared.sh` і несуть шапку «ЗГЕНЕРОВАНО». Довідники прикладів живуть
+у `shared/examples/<імʼя-скіла>.md` і розкладаються за конвенцією імені, без мапи. Після зміни `shared/` —
 перезапустити sync. `scripts/check-shared.sh` падає, якщо копію правили руками.
 
 ## Анатомія SKILL.md

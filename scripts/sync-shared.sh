@@ -22,4 +22,21 @@ while read -r src dests; do
   done
 done < <(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba' -e '}' scripts/shared-map.txt)
 
-echo "Розкладено копій: $n"
+# --- довідники прикладів: shared/examples/<slug>.md → <skill>/references/examples.md ---
+# за конвенцією, без мапи: імʼя файлу = імʼя скіла
+e=0
+for src in shared/examples/*.md; do
+  slug=$(basename "$src" .md)
+  d=$(ls -d plugins/*/skills/"$slug" 2>/dev/null | head -1)
+  [ -n "$d" ] || { echo "НЕМАЄ скіла для приклада $slug" >&2; exit 1; }
+  mkdir -p "$d/references"
+  {
+    echo "<!-- ЗГЕНЕРОВАНО з $src скриптом scripts/sync-shared.sh."
+    echo "     Не правити тут — правки затираються. Канонічне джерело: $src -->"
+    echo
+    cat "$src"
+  } > "$d/references/examples.md"
+  e=$((e+1))
+done
+
+echo "Розкладено копій: $n · довідників прикладів: $e"

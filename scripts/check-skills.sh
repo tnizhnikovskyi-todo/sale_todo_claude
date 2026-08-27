@@ -66,6 +66,20 @@ for f in plugins/*/skills/*/SKILL.md; do
   fi
 done
 
+# --- довідник прикладів обовʼязковий ---
+echo "▸ довідники прикладів"
+stubs=0
+for f in plugins/*/skills/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  d=$(dirname "$f"); slug=$(basename "$d")
+  if [ ! -f "$d/references/examples.md" ]; then
+    echo "  ✗ $slug: немає references/examples.md — додай shared/examples/$slug.md"; fail=1
+  elif grep -q 'ЗАГОТОВКА' "$d/references/examples.md"; then
+    stubs=$((stubs+1))
+  fi
+done
+[ "$stubs" -gt 0 ] && echo "  ℹ заготовок без реального прогону: $stubs з 16 — заповнити після прогону"
+
 # --- хто читає журнал, мусить мати його контракт ---
 echo "▸ контракт журналу в тих, хто журнал читає"
 for f in plugins/*/skills/*/SKILL.md; do
