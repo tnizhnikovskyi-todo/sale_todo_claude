@@ -27,7 +27,9 @@ done < <(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba' -e '}' scripts/shared-map.txt)
 e=0
 for src in shared/examples/*.md; do
   slug=$(basename "$src" .md)
-  d=$(ls -d plugins/*/skills/"$slug" 2>/dev/null | head -1)
+  # без `ls | head`: під pipefail головна команда конвеєра ловить SIGPIPE і падає
+  d=""
+  for cand in plugins/*/skills/"$slug"; do [ -d "$cand" ] && { d="$cand"; break; }; done
   [ -n "$d" ] || { echo "НЕМАЄ скіла для приклада $slug" >&2; exit 1; }
   mkdir -p "$d/references"
   {

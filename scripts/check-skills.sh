@@ -19,15 +19,21 @@ for f in plugins/*/skills/*/SKILL.md; do
   echo "▸ $slug"
 
   # --- frontmatter ---
-  head -1 "$f" | grep -qx -- '---' || { echo "  ✗ немає frontmatter на першому рядку"; fail=1; }
-  fm_name=$(sed -n '2,20p' "$f" | sed -n 's/^name: *//p' | head -1)
+  # Пастка: `echo "$x" | grep -q` під `set -o pipefail` дає випадкові фальшиві падіння —
+  # grep -q виходить на першому збігу, echo отримує SIGPIPE (141), і pipefail віддає 141
+  # як статус усього конвеєра. Тому тут і далі — herestring, без конвеєра.
+  IFS= read -r first_line < "$f"
+  grep -qx -- '---' <<<"$first_line" || { echo "  ✗ немає frontmatter на першому рядку"; fail=1; }
+
+  # тільки frontmatter: від другого рядка до першого закриваючого ---
+  fm=$(awk 'NR>1 && /^---$/{exit} NR>1{print}' "$f")
+  fm_name=$(sed -n 's/^name: *//p' <<<"$fm" | head -1)
   [ "$fm_name" = "$slug" ] || { echo "  ✗ name: '$fm_name' ≠ каталог '$slug'"; fail=1; }
 
-  fm=$(sed -n '/^---$/,/^---$/p' "$f")
-  echo "$fm" | grep -q 'Запускай\|Використовуй' || { echo "  ✗ description без «Запускай коли…»"; fail=1; }
-  echo "$fm" | grep -q 'Тригерні фрази\|Тригери' || { echo "  ✗ description без тригерних фраз"; fail=1; }
-  echo "$fm" | grep -q 'НЕ для\|НЕ розбирає\|НЕ пише\|НЕ протокол\|НЕ лист\|НЕ ' || { echo "  ✗ description без негативної межі «НЕ для X»"; fail=1; }
-  echo "$fm" | grep -q 'Результат' || { echo "  ✗ description без «Результат — файл»"; fail=1; }
+  grep -q 'Запускай\|Використовуй' <<<"$fm" || { echo "  ✗ description без «Запускай коли…»"; fail=1; }
+  grep -q 'Тригерні фрази\|Тригери' <<<"$fm" || { echo "  ✗ description без тригерних фраз"; fail=1; }
+  grep -q 'НЕ для\|НЕ розбирає\|НЕ пише\|НЕ протокол\|НЕ лист\|НЕ ' <<<"$fm" || { echo "  ✗ description без негативної межі «НЕ для X»"; fail=1; }
+  grep -q 'Результат' <<<"$fm" || { echo "  ✗ description без «Результат — файл»"; fail=1; }
 
   # --- обов'язкові розділи ---
   need "$f" 'немає ## Мета'                    '^## Мета'
@@ -85,7 +91,8 @@ echo "▸ контракт журналу в тих, хто журнал чит�
 for f in plugins/*/skills/*/SKILL.md; do
   [ -e "$f" ] || continue
   d=$(dirname "$f"); slug=$(basename "$d")
-  if sed -n '/\*\*Читання вх/,/^\*\*[^Ч]/p' "$f" | grep -q 'журнал_продажу'; then
+  reads_block=$(sed -n '/\*\*Читання вх/,/^\*\*[^Ч]/p' "$f")
+  if grep -q 'журнал_продажу' <<<"$reads_block"; then
     [ -f "$d/references/deal_journal_template.md" ] || { echo "  ✗ $slug читає журнал, але contract у references/ немає — додай у scripts/shared-map.txt"; fail=1; }
   fi
 done
@@ -127,7 +134,7 @@ for f in plugins/*/skills/*/SKILL.md; do
   [ -e "$f" ] || continue
   for r in $(grep -oE '`[a-z][a-z0-9]+(-[a-z0-9]+){1,4}`' "$f" | tr -d '`' | sort -u); do
     case "$r" in *.md|*.json|*.sh|*.ltd|*.com|*.ua) continue ;; esac
-    echo "$KNOWN" | grep -qx "$r" || { echo "  ✗ $(basename "$(dirname "$f")") посилається на невідомий скіл: $r"; fail=1; }
+    grep -qx "$r" <<<"$KNOWN" || { echo "  ✗ $(basename "$(dirname "$f")") посилається на невідомий скіл: $r"; fail=1; }
   done
 done
 
