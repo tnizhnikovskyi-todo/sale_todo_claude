@@ -64,6 +64,33 @@ for f in plugins/*/skills/*/SKILL.md; do
   fi
 done
 
+# --- перехресні посилання: чи існує кожен згаданий скіл ---
+OURS=$(ls -d plugins/*/skills/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null | sort -u)
+HOUSE="sales-handover-analyzer session-transcript-analyzer meeting-protocol-builder
+kickoff-transcript-analyzer kickoff-survey-protocol odoo-spec-writer tr-usecases-acceptance
+tr-odoo-tech-design tr-effort-instruction tr-review tr-registry-update tr-change-request
+discovery-scope-mapper session-question-builder session-client-prep-builder
+client-web-researcher competitor-mapper industry-briefing discovery-context-builder
+kickoff-agenda-finalizer kickoff-question-builder facilitation-guide-builder
+discovery-charter-writer discovery-plan-builder build-allocator config-spec config-runbook
+config-review data-migration-planner go-live-runbook user-training-builder hypercare-tracker
+acceptance-act-builder odoo-architecture scaffolding code-dev testing pr-review
+security-review skill-creator"
+# назви плагінів — не скіли, посилання на них легітимні
+PLUGINS=$(ls -d plugins/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null; echo "odoo19-discovery-initiation
+odoo19-discovery-sessions odoo19-discovery-closeout odoo19-tr-authoring odoo19-mvp-build
+odoo19-implementation odoo-connector")
+KNOWN=$(printf '%s\n%s\n%s\n' "$OURS" "$HOUSE" "$PLUGINS" | tr ' ' '\n' | sed '/^$/d' | sort -u)
+
+echo "▸ перехресні посилання"
+for f in plugins/*/skills/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  for r in $(grep -oE '`[a-z][a-z0-9]+(-[a-z0-9]+){1,4}`' "$f" | tr -d '`' | sort -u); do
+    case "$r" in *.md|*.json|*.sh|*.ltd|*.com|*.ua) continue ;; esac
+    echo "$KNOWN" | grep -qx "$r" || { echo "  ✗ $(basename "$(dirname "$f")") посилається на невідомий скіл: $r"; fail=1; }
+  done
+done
+
 echo
 if [ "$found" -eq 0 ]; then echo "SKILL.md не знайдено"; exit 0; fi
 echo "Перевірено скілів: $found"
