@@ -66,6 +66,30 @@ for f in plugins/*/skills/*/SKILL.md; do
   fi
 done
 
+# --- хто читає журнал, мусить мати його контракт ---
+echo "▸ контракт журналу в тих, хто журнал читає"
+for f in plugins/*/skills/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  d=$(dirname "$f"); slug=$(basename "$d")
+  if sed -n '/\*\*Читання вх/,/^\*\*[^Ч]/p' "$f" | grep -q 'журнал_продажу'; then
+    [ -f "$d/references/deal_journal_template.md" ] || { echo "  ✗ $slug читає журнал, але contract у references/ немає — додай у scripts/shared-map.txt"; fail=1; }
+  fi
+done
+
+# --- формула коефіцієнта мусить бути дослівною копією контракту ---
+echo "▸ формула коефіцієнта"
+python3 - <<'PYCHK' || fail=1
+import re, sys
+c = open('shared/deal_journal_template.md', encoding='utf-8').read()
+d = open('plugins/odoo19-sales-prep/skills/data-completeness-scorer/SKILL.md', encoding='utf-8').read()
+g = lambda t: re.search(r'```\n(\u0454 \u0445\u043e\u0447 \u043e\u0434\u043d\u0435.*?)\n```', t, re.S)
+a, b = g(c), g(d)
+if not a or not b:
+    print('  \u2717 \u043d\u0435 \u0437\u043d\u0430\u0439\u0448\u043e\u0432 \u0444\u043e\u0440\u043c\u0443\u043b\u0443'); sys.exit(1)
+if a.group(1) != b.group(1):
+    print('  \u2717 \u0444\u043e\u0440\u043c\u0443\u043b\u0430 \u0432 data-completeness-scorer \u0440\u043e\u0437\u0456\u0448\u043b\u0430\u0441\u044c \u0456\u0437 \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u043e\u043c'); sys.exit(1)
+PYCHK
+
 # --- перехресні посилання: чи існує кожен згаданий скіл ---
 OURS=$(ls -d plugins/*/skills/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null | sort -u)
 HOUSE="sales-handover-analyzer session-transcript-analyzer meeting-protocol-builder

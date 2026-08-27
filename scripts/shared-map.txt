@@ -20,13 +20,23 @@ registers.md \
   plugins/odoo19-sales-offer/skills/defence-debrief \
   plugins/odoo19-sales-offer/skills/handover-dossier-builder
 
+# Контракт журналу потрібен КОЖНОМУ, хто журнал читає або пише — інакше скіл
+# не може дотримати правил ID, статусів і реєстрів. Не має його тільки
+# brief-prep-pack: він працює до того, як журнал існує.
 deal_journal_template.md \
   plugins/odoo19-sales-prep/skills/brief-transcript-analyzer \
+  plugins/odoo19-sales-prep/skills/client-followup-writer \
   plugins/odoo19-sales-prep/skills/data-completeness-scorer \
   plugins/odoo19-sales-prep/skills/preliminary-estimate \
+  plugins/odoo19-sales-prep/skills/demo-build-plan \
+  plugins/odoo19-sales-demo/skills/demo-base-builder \
+  plugins/odoo19-sales-demo/skills/demo-runbook \
   plugins/odoo19-sales-demo/skills/presale-pack-builder \
   plugins/odoo19-sales-demo/skills/demo-debrief \
+  plugins/odoo19-sales-demo/skills/demo-followup-writer \
+  plugins/odoo19-sales-demo/skills/client-questions-pack \
   plugins/odoo19-sales-offer/skills/offer-finalizer \
+  plugins/odoo19-sales-offer/skills/defence-brief \
   plugins/odoo19-sales-offer/skills/defence-debrief \
   plugins/odoo19-sales-offer/skills/handover-dossier-builder
 

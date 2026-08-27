@@ -67,14 +67,29 @@
 | Поле | Тип | Пастка |
 |------|-----|--------|
 | `ata_clients_industry_ids` | **many2one** | **суфікс `_ids` бреше** — галузь ОДНА, не список. У домені `["ata_clients_industry_ids","=",id]`, не `"in"` |
-| `ata_client_type` | selection | значення `client` / `partner` / `false` |
-| `ata_need_brief`, `ata_need_demo` | selection | `yes` / `no` / `false` |
+| `ata_client_type` | selection | **тільки** `client` · `partner` · `contractor` · `competitor` · `false` |
+| `ata_need_brief`, `ata_need_demo` | selection | **тільки** `yes` · `no` · `false` |
 | `ata_employee_count`, `ata_license_count` | integer | `0` = не вказано |
-| `ata_how_is_KP_calculated` | selection | напр. `analysts_think`, `by_myself_agreement_from_analytics` |
+| `ata_how_is_KP_calculated` | selection | **тільки два значення:** `by_myself_agreement_from_analytics` · `analysts_think`. **Значення для режиму «сейл + Claude» немає** — див. нижче |
 | `expected_revenue` | monetary | **у гривні** (`company_currency` = UAH) |
 | `company_currency` | many2one, **readonly** | тільки читаємо |
 | `date_closed` | datetime, **readonly** | тільки читаємо |
 | `description` | html | не plain text — чисти теги перед аналізом |
+
+**Жоден скіл не пише в selection значення, якого немає в цій таблиці.** Сумнів —
+не пишемо і кажемо про це в підсумку.
+
+**Окрема проблема: `ata_how_is_KP_calculated`.** Обидва наявні значення описують
+світ, де КП рахує аналітик або сейл за погодженням з аналітикою. Режиму «сейл + Claude,
+без аналітика» — того самого, який вводить ця фаза, — у полі **немає**. Тому:
+
+- скіл записує це поле **тільки якщо сейл прямо назвав значення**;
+- інакше поле не чіпає, а спосіб розрахунку фіксує в розділі 3 журналу текстом;
+- у підсумку скіл каже: «поле `ata_how_is_KP_calculated` не заповнив — немає значення
+  для режиму «сейл + Claude»».
+
+Це не обхід, а чесна межа: заповнити `analysts_think`, коли аналітика не було,
+означає зіпсувати аналітику причин на рівні всієї воронки.
 
 ---
 
