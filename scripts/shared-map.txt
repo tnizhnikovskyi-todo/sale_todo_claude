@@ -47,6 +47,11 @@ deal_journal_template.md \
 handover_contract.md \
   plugins/odoo19-sales-offer/skills/handover-dossier-builder
 
+# Фірмовий стиль .docx — двом скілам, що віддають клієнтські документи.
+docx_style.md \
+  plugins/odoo19-sales-demo/skills/presale-pack-builder \
+  plugins/odoo19-sales-offer/skills/offer-finalizer
+
 # Спільні конвенції — усім вісімнадцяти без винятку.
 skill_conventions.md \
   plugins/odoo19-sales-demo/skills/client-questions-pack \
