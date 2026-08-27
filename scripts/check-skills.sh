@@ -77,6 +77,12 @@ for f in plugins/*/skills/*/SKILL.md; do
     done
   fi
 
+  # --- хто пише в живу базу, той тримає §10 конвенцій ---
+  if grep -q 'odoo_write\|odoo_create' "$f"; then
+    grep -q 'fields_get' "$f" || { echo "  ✗ пише в базу, але не згадує fields_get перед записом у selection-поле (§10 конвенцій)"; fail=1; }
+    grep -qE '^- \[ \] \*\*Запис у selection-поле' "$f" || { echo "  ✗ пише в базу, але в Pre-save немає рядка «Запис у selection-поле … §10 конвенцій»"; fail=1; }
+  fi
+
   # --- обсяг SKILL.md: 550 рядків ≈ 11k токенів on-invoke (§3 конвенцій) ---
   ln=$(wc -l < "$f")
   [ "$ln" -le 550 ] || { echo "  ✗ $ln рядків — понад 550 (≈11k токенів за прогін). Спершу шукай дублювання з контрактом"; fail=1; }
