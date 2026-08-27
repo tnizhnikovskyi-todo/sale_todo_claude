@@ -171,6 +171,9 @@ odoo19-discovery-sessions odoo19-discovery-closeout odoo19-tr-authoring odoo19-m
 odoo19-implementation odoo-connector")
 KNOWN=$(printf '%s\n%s\n%s\n' "$OURS" "$HOUSE" "$PLUGINS" | tr ' ' '\n' | sed '/^$/d' | sort -u)
 
+echo "▸ тригерні фрази ланцюга"
+python3 scripts/check-triggers.py || fail=1
+
 echo "▸ перехресні посилання"
 for f in plugins/*/skills/*/SKILL.md; do
   [ -e "$f" ] || continue
