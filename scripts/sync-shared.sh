@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Розкладає канонічні контракти з shared/ у references/ кожного скіла за scripts/shared-map.txt.
 set -euo pipefail
+export LC_ALL=C.utf8   # без цього grep працює в байтовому режимі і кириличні діапазони [иу] не збігаються
 cd "$(dirname "$0")/.."
 
 n=0

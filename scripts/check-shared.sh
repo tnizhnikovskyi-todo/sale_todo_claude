@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Перевіряє, що жодну копію в references/ не правили руками.
 set -euo pipefail
+export LC_ALL=C.utf8   # без цього grep працює в байтовому режимі і кириличні діапазони [иу] не збігаються
 cd "$(dirname "$0")/.."
 
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
