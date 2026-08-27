@@ -185,6 +185,14 @@ def logo(tpl):
             '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>')
 
 
+BLOCK_START = re.compile(r'^\s*(#{1,6}\s|[-*]\s|\d+[.)]\s|\||>\s|---\s*$|\[\[)')
+
+
+def is_block_start(ln):
+    """Рядок починає новий блок, а не продовжує абзац."""
+    return bool(ln.strip()) and bool(BLOCK_START.match(ln))
+
+
 def strip_comments(md):
     """HTML-комментарі з boilerplate-файлів у документ не потрапляють."""
     return re.sub(r'<!--.*?-->', '', md, flags=re.S)
@@ -211,6 +219,15 @@ def expand_includes(md, base, depth=0):
         inc = strip_comments(open(path, encoding='utf-8').read())
         out.append(expand_includes(inc, base, depth + 1))
     return '\n'.join(out)
+
+
+def _item(first, lines, i):
+    """Пункт списку може продовжуватись наступним рядком — склеюємо."""
+    chunk, j = [first], i + 1
+    while j < len(lines) and lines[j].strip() and not is_block_start(lines[j]):
+        chunk.append(lines[j].strip())
+        j += 1
+    return ' '.join(chunk), j
 
 
 def convert(md, tpl):
@@ -268,20 +285,25 @@ def convert(md, tpl):
         m = re.match(r'^(\s*)([-*])\s+(.*)$', ln)
         if m:
             ilvl = min(len(m.group(1)) // 2, 8)
-            body.append(para(m.group(3), num=NUM_BUL, ilvl=ilvl))
-            i += 1; continue
+            txt, i = _item(m.group(3), lines, i)
+            body.append(para(txt, num=NUM_BUL, ilvl=ilvl))
+            continue
 
         m = re.match(r'^(\s*)(\d+)[.)]\s+(.*)$', ln)
         if m:
             ilvl = min(len(m.group(1)) // 2, 8)
-            body.append(para(m.group(3), num=NUM_DEC, ilvl=ilvl))
-            i += 1; continue
+            txt, i = _item(m.group(3), lines, i)
+            body.append(para(txt, num=NUM_DEC, ilvl=ilvl))
+            continue
 
         if s.startswith('|'):
             rows, j, sep = [], i, False
             while j < len(lines) and lines[j].strip().startswith('|'):
                 cells = [c.strip() for c in lines[j].strip().strip('|').split('|')]
-                if all(re.fullmatch(r':?-{2,}:?', c) for c in cells if c):
+                # порожній рядок-форма (| | | |) — це РЯДОК ДАНИХ, а не роздільник:
+                # all() на порожній послідовності дає True, і без перевірки
+                # на непорожність анкета з полями під заповнення зникала
+                if any(cells) and all(re.fullmatch(r':?-{2,}:?', c) for c in cells if c):
                     sep = True
                 else:
                     rows.append(cells)
@@ -293,8 +315,16 @@ def convert(md, tpl):
                 raise SystemExit(f'рядок {i+1}: у таблиці немає жодного рядка даних')
             body.append(table(rows)); i = j; continue
 
-        body.append(para(s, space_after=60))
-        i += 1
+        # абзац: послідовні прості рядки — один абзац, як у markdown.
+        # Без склеювання «жирний **розрив між рядками**» протікає розміткою,
+        # а суцільний текст розсипається на окремі абзаци.
+        chunk = [s]
+        j = i + 1
+        while j < len(lines) and lines[j].strip() and not is_block_start(lines[j]):
+            chunk.append(lines[j].strip())
+            j += 1
+        body.append(para(' '.join(chunk), space_after=60))
+        i = j
     return ''.join(body)
 
 

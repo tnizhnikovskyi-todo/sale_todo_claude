@@ -49,6 +49,7 @@ handover_contract.md \
 
 # Фірмовий стиль .docx — двом скілам, що віддають клієнтські документи.
 docx_style.md \
+  plugins/odoo19-sales-prep/skills/client-followup-writer \
   plugins/odoo19-sales-demo/skills/presale-pack-builder \
   plugins/odoo19-sales-offer/skills/offer-finalizer
 

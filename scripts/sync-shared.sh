@@ -61,10 +61,11 @@ for d in $docx_dests; do
     chmod +x "$d/scripts/$f"
     t=$((t+1))
   done
-  rm -rf "$d/assets/docx-template" "$d/assets/docx-boilerplate"
+  rm -rf "$d/assets/docx-template" "$d/assets/docx-boilerplate" "$d/assets/questionnaire"
   cp -a assets/docx-template "$d/assets/docx-template"
   cp -a assets/docx-boilerplate "$d/assets/docx-boilerplate"
-  t=$((t+2))
+  cp -a assets/questionnaire "$d/assets/questionnaire"
+  t=$((t+3))
 done
 
 echo "Розкладено копій: $n · довідників прикладів: $e · інструментарію .docx: $t"
