@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "odoo19-sales-prep",
+  "displayName": "Odoo 19 · Продажі · підготовка",
+  "version": "0.1.0",
+  "description": "Фаза 0, стадії S2-S3. Шість скілів: підготовка до брифу, розбір транскрипту брифу в журнал продажу, чернетка follow-up, оцінка повноти даних і коефіцієнт вилки, попередня оцінка з білими плямами, план демо-збірки.",
+  "author": {
+    "name": "ToDo"
+  },
+  "repository": "https://github.com/tnizhnikovskyi-todo/sale_todo_claude",
+  "keywords": ["odoo", "odoo19", "sales", "presale", "ukrainian"],
+  "defaultEnabled": true
+}
