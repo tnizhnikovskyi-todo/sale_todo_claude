@@ -1,0 +1,58 @@
+name: перевірки
+
+# 32 перевірки чекера скілів, синхронність спільних контрактів і конвейєр .docx
+# запускались тільки коли хтось згадував. Тепер — на кожен push і кожен PR.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Спільні контракти синхронні
+        run: ./scripts/check-shared.sh
+
+      - name: SKILL.md тримають конвенції дому
+        run: ./scripts/check-skills.sh
+
+      - name: Конвейєр .docx — фікстури і негативні кейси
+        run: ./scripts/test-docx.sh
+
+      - name: Валідність манифестів плагінів
+        run: |
+          python3 - <<'PY'
+          import json, glob, sys
+          bad = 0
+          m = json.load(open('.claude-plugin/marketplace.json'))
+          names = {p['name'] for p in m['plugins']}
+          for f in glob.glob('plugins/*/.claude-plugin/plugin.json'):
+              p = json.load(open(f))
+              if p['name'] not in names:
+                  print(f'✗ {p["name"]} немає в marketplace.json'); bad = 1
+              if p['version'] != m['version']:
+                  print(f'✗ {p["name"]}: версія {p["version"]} ≠ версії маркетплейсу {m["version"]}'); bad = 1
+          for n in names:
+              if not glob.glob(f'plugins/{n}/.claude-plugin/plugin.json'):
+                  print(f'✗ у marketplace.json є {n}, а плагіна немає'); bad = 1
+          print('манифести:', 'ок' if not bad else 'порушення')
+          sys.exit(bad)
+          PY
+
+      - name: Клієнтських даних у репозиторії немає
+        run: |
+          python3 - <<'PY'
+          import glob, re, sys
+          # робочі артефакти з даними замовників у git не потрапляють (registers.md §5а)
+          pats = ['журнал_продажу_*', 'досьє_передачі_*', 'КП_*.docx', 'розриви_*.docx',
+                  'оцінка_проєкту_*.docx', 'оцінка_дискавері_*.docx', 'знімок_демо_*',
+                  'лист_після_*', 'аргументація_захисту_*', 'підсумок_захисту_*']
+          found = [f for p in pats for f in glob.glob(f'**/{p}', recursive=True)]
+          for f in found: print('✗ артефакт із даними замовника в репозиторії:', f)
+          print('клієнтські дані:', 'ок' if not found else 'порушення')
+          sys.exit(1 if found else 0)
+          PY

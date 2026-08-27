@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "odoo19-sales-demo",
   "displayName": "Odoo 19 · Продажі · демо",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Фаза 0, стадія S4. Шість скілів: збірка і налаштування демо-бази на стенді, план проведення демо зі стоп-сигналами і Q&A, пакет із п'яти документів, розбір демо за умовою, чернетка follow-up, пакет питань клієнта до повторної зустрічі.",
   "author": {
     "name": "ToDo"

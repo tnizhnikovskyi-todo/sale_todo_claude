@@ -70,6 +70,11 @@ for f in plugins/*/skills/*/SKILL.md; do
     grep -q 'make-docx.py' "$f" || { echo "  ✗ віддає .docx, але не викликає scripts/make-docx.py"; fail=1; }
     grep -q 'check-docx.py' "$f" || { echo "  ✗ віддає .docx, але не перевіряє scripts/check-docx.py"; fail=1; }
     [ -f "$dir/references/docx_style.md" ] || { echo "  ✗ віддає .docx без контракту стилю в references/ — додай у scripts/shared-map.txt"; fail=1; }
+    # інструментарій мусить лежати ВСЕРЕДИНІ скіла: встановлений плагін кореня репозиторію не бачить
+    for need in scripts/make-docx.py scripts/check-docx.py \
+                assets/docx-template/word/styles.xml assets/docx-boilerplate/про-odoo.md; do
+      [ -f "$dir/$need" ] || { echo "  ✗ віддає .docx, але в скілі немає $need — перезапусти sync-shared.sh"; fail=1; }
+    done
   fi
 
   # --- плейсхолдери шаблону ---
