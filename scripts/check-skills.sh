@@ -114,6 +114,8 @@ for f in plugins/*/skills/*/SKILL.md; do
   d=$(dirname "$f"); slug=$(basename "$d")
   if [ ! -f "$d/references/examples.md" ]; then
     echo "  ✗ $slug: немає references/examples.md — додай shared/examples/$slug.md"; fail=1
+  elif ! grep -q 'Анонімізація перевірена' "$d/references/examples.md"; then
+    echo "  ✗ $slug: у довіднику прикладів немає рядка «Анонімізація перевірена» — додай у shared/examples/$slug.md"; fail=1
   elif grep -q 'ЗАГОТОВКА' "$d/references/examples.md"; then
     stubs=$((stubs+1))
   fi
