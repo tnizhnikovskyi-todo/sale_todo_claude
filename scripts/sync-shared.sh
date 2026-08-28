@@ -51,7 +51,7 @@ docx_dests=$(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba' -e '}' scripts/shared-map.txt 
 for d in $docx_dests; do
   [ -d "$d" ] || { echo "НЕМАЄ каталогу скіла $d" >&2; exit 1; }
   mkdir -p "$d/scripts" "$d/assets"
-  for f in make-docx.py check-docx.py; do
+  for f in make-docx.py check-docx.py check-humizer.py; do
     {
       echo "#!/usr/bin/env python3"
       echo "# ЗГЕНЕРОВАНО з scripts/$f скриптом scripts/sync-shared.sh."

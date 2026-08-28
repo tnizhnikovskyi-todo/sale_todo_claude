@@ -57,11 +57,12 @@ description: >
 ## Перевірки перед комітом
 
 ```bash
+./scripts/check-humizer.py <файл>  # клієнтський документ: ID, теги, механіка, жаргон
 ./scripts/check-shared.sh    # копії спільних контрактів не правили руками
 ./scripts/check-skills.sh    # SKILL.md тримають конвенції вище
 ./scripts/check-triggers.py  # тригерні фрази «Наступного кроку» = description цілі
 ./scripts/check-manifests.sh # манифести + власний валідатор Claude Code
-./scripts/test-docx.sh       # конвейєр .docx: фікстури і негативні кейси
+./scripts/test-docx.sh       # конвейєр .docx: фікстури, негативні кейси, Humizer
 ```
 
 Те саме на кожен push виконує CI (`.github/workflows/checks.yml`), плюс перевірку,
