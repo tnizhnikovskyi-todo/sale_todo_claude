@@ -22,6 +22,8 @@ import re, sys, zipfile
 # ── ID реєстрів журналу: «G-12», «Q-7», «ST-3» — головне, що не має дійти до клієнта
 IDS = re.compile(r'(?<![A-Za-zА-Яа-я0-9])(?:ST|D|X|G|Q|C|P|R|A)-\d{1,3}(?![0-9])')
 TAGS = re.compile(r'\[(?:КО|ВО|ПП)\]')
+# §13: блок питань до сейла живе у внутрішньому виході, у клієнтський не потрапляє
+ASKS = re.compile(r'Питання до сейла|Без відповіді:', re.I)
 LEVELS = re.compile(r'[🔴🟡🟢🟠]')
 # Fathom — інструмент запису дому; посилання виглядає як fathom.video/share/<токен>.
 # tldv лишається в переліку: старі транскрипти нікуди не зникли.
@@ -79,6 +81,9 @@ def check(path):
         bad.append('маркер рівня 🔴/🟡 — внутрішній (§3)')
     for m in dict.fromkeys(TRANSCRIPT.findall(txt)):
         bad.append(f'слід транскрипту: {m!r} (§3)')
+    m = ASKS.search(txt)
+    if m:
+        bad.append(f'питання до сейла в клієнтському документі: «{m.group(0)}» (§13 конвенцій)')
     for rx, why in MECHANICS + JARGON:
         m = rx.search(txt)
         if m:
