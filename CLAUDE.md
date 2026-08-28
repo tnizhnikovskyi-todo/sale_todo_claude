@@ -69,6 +69,7 @@ description: >
 ./scripts/check-triggers.py  # тригерні фрази «Наступного кроку» = description цілі
 ./scripts/check-manifests.sh # манифести + власний валідатор Claude Code
 ./scripts/test-docx.sh       # конвейєр .docx: фікстури, негативні кейси, Humizer
+./scripts/verify-install.sh   # маркетплейс ставиться з клону і плагіни несуть скіли
 ```
 
 Те саме на кожен push виконує CI (`.github/workflows/checks.yml`), плюс перевірку,

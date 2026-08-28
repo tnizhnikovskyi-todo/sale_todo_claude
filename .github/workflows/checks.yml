@@ -26,6 +26,9 @@ jobs:
       - name: Манифести узгоджені
         run: ./scripts/check-manifests.sh
 
+      - name: Установка з клону несе скіли
+        run: ./scripts/verify-install.sh
+
       - name: Клієнтських даних у репозиторії немає
         run: |
           python3 - <<'PY'
