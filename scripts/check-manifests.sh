@@ -5,6 +5,7 @@ set -uo pipefail
 export LC_ALL=C.utf8
 cd "$(dirname "$0")/.."
 . ./scripts/lib-scope.sh
+source_repo_or_skip "перевірка манифестів"
 
 fail=0
 

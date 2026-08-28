@@ -15,6 +15,7 @@ set -uo pipefail
 export LC_ALL=C.utf8
 cd "$(dirname "$0")/.."
 . ./scripts/lib-scope.sh
+source_repo_or_skip "перевірка установки"
 
 command -v claude >/dev/null 2>&1 || {
   echo "▸ перевірка установки — CLI Claude Code недоступний, пропущено"; exit 0; }
