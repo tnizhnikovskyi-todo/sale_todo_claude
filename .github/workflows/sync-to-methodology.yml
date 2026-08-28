@@ -1,0 +1,154 @@
+# Односторонній перенос фази продажів у спільний маркетплейс методології.
+#
+# Навіщо саме так, а не посиланням: заміряно на CLI 2.1.250 —
+#   • `source` на плагін у підкаталозі іншого репозиторію ставиться, але дає НУЛЬ скілів
+#     (CLI клонує весь репозиторій і вважає плагіном його корінь);
+#   • сабмодуль + симлінк працює лише при клоні з --recurse-submodules, а CLI клонує
+#     без нього: установка падає з «Source path does not exist».
+# Тому в цільовому репозиторії мусять лежати справжні файли. Цей workflow їх туди
+# і кладе — але не пушить у дефолтну гілку, а відкриває PR.
+#
+# Що потрібно один раз налаштувати:
+#   1. секрет METHODOLOGY_SYNC_TOKEN — токен із правом push у цільовий репозиторій
+#      (fine-grained PAT: Contents write + Pull requests write, або GitHub App);
+#   2. пройти docs/migration-plan.md — перший перенос робиться руками, бо зливаються
+#      marketplace.json, CLAUDE.md, .gitignore і CI. Далі цей workflow тримає синхрон.
+
+name: перенос у маркетплейс методології
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: Цільовий репозиторій
+        default: todoltd/claude-methodology-marketplace
+        required: true
+      plugin_root:
+        description: Каталог плагінів у цільовому репозиторії
+        default: plugins
+        required: true
+      dry_run:
+        description: Тільки показати різницю, PR не відкривати
+        type: boolean
+        default: true
+  # Автоматично — після мержу в дефолтну гілку. Розкомментувати, коли перший
+  # перенос зроблений руками і секрет на місці.
+  # push:
+  #   branches: [main]
+  #   paths: ['plugins/**', 'shared/**', 'scripts/**', 'assets/**', 'tests/**']
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ inputs.target_repo || 'todoltd/claude-methodology-marketplace' }}
+      PLUGIN_ROOT: ${{ inputs.plugin_root || 'plugins' }}
+    steps:
+      - name: Секрет на місці
+        run: |
+          if [ -z "${{ secrets.METHODOLOGY_SYNC_TOKEN }}" ]; then
+            echo "::error::Немає секрету METHODOLOGY_SYNC_TOKEN — перенос неможливий."
+            echo "Це не тихий пропуск: без токена workflow падає, щоб не створювати"
+            echo "враження, що синхронізація працює."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Джерело саме по собі зелене
+        working-directory: source
+        run: |
+          ./scripts/check-shared.sh
+          ./scripts/check-skills.sh
+          ./scripts/check-manifests.sh
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TARGET }}
+          token: ${{ secrets.METHODOLOGY_SYNC_TOKEN }}
+          path: target
+
+      - name: Перенести дерево фази
+        run: |
+          set -euo pipefail
+          cd source
+          ours=$(sed 's/#.*//' scripts/our-plugins.txt | sed '/^[[:space:]]*$/d')
+          cd ..
+
+          # плагіни: кожен окремо, --delete тільки в межах свого каталогу.
+          # Ніколи не rsync --delete у корінь цілі: там лежать чужі фази.
+          for p in $ours; do
+            mkdir -p "target/$PLUGIN_ROOT/$p"
+            rsync -a --delete "source/plugins/$p/" "target/$PLUGIN_ROOT/$p/"
+          done
+
+          # спільні частини фази — у власні каталоги, щоб не збігтись із їхніми
+          for d in shared scripts assets tests; do
+            rsync -a --delete "source/$d/" "target/sales-phase/$d/"
+          done
+          rsync -a "source/docs/" "target/sales-phase/docs/"
+          cp source/scripts/our-plugins.txt "target/sales-phase/scripts/our-plugins.txt"
+
+          # НЕ переносимо: marketplace.json, CLAUDE.md, .gitignore, CI, README,
+          # CHANGELOG — вони в цілі зливаються руками один раз (migration-plan.md §3)
+
+      - name: Перевірки в дереві цілі
+        working-directory: target/sales-phase
+        env:
+          PLUGDIR: ../${{ env.PLUGIN_ROOT }}
+        run: |
+          # головна перевірка переносу: конвенції тримаються вже в цільовій структурі,
+          # а не тільки в джерелі
+          ./scripts/check-shared.sh
+          ./scripts/check-skills.sh
+          ./scripts/test-docx.sh
+
+      - name: Версія в маркетплейсі цілі не розійшлась
+        working-directory: target
+        run: |
+          set -euo pipefail
+          ours=$(python3 -c "import json;print(json.load(open('../source/.claude-plugin/marketplace.json'))['version'])")
+          for p in $(sed 's/#.*//' sales-phase/scripts/our-plugins.txt | sed '/^[[:space:]]*$/d'); do
+            got=$(python3 -c "import json;print(json.load(open('$PLUGIN_ROOT/$p/.claude-plugin/plugin.json'))['version'])")
+            [ "$got" = "$ours" ] || { echo "::error::версія $p у цілі $got ≠ $ours"; exit 1; }
+          done
+          echo "версія фази: $ours"
+
+      - name: Різниця
+        working-directory: target
+        run: |
+          git add -A
+          git diff --cached --stat | tail -30
+          echo "змінених файлів: $(git diff --cached --name-only | wc -l)"
+
+      - name: PR у ціль
+        if: ${{ inputs.dry_run != true }}
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ secrets.METHODOLOGY_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          if git diff --cached --quiet; then echo "нічого переносити"; exit 0; fi
+          br="sync/sales-phase-$(date +%Y%m%d-%H%M)"
+          git config user.name  "sales-phase sync"
+          git config user.email "noreply@todo.ltd"
+          git checkout -b "$br"
+          git commit -qm "Синхронізація фази продажів із sale_todo_claude@${GITHUB_SHA:0:12}"
+          git push -u origin "$br"
+          gh pr create --title "Синхронізація фази продажів" \
+            --body "Автоматичний перенос із \`${GITHUB_REPOSITORY}@${GITHUB_SHA:0:12}\`.
+
+          Перенесено: каталоги трьох плагінів фази і \`sales-phase/\` (контракти,
+          перевірки, ресурси, фікстури, звіти).
+          **Не** торкалось: \`marketplace.json\`, \`CLAUDE.md\`, \`.gitignore\`, CI, README.
+
+          Перевірки пройдені **в дереві цілі**: check-shared, check-skills, test-docx,
+          парність версій.
+
+          Перед мержем варто прогнати установку з клону цілі й подивитись
+          \`claude plugin details\` — має бути Skills > 0 у кожного з трьох плагінів."
