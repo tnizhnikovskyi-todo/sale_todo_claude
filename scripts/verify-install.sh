@@ -51,11 +51,16 @@ for p in $(ours); do
   fi
 done
 
+# Порівнюємо з КЛОНОМ, а не з робочим деревом: інакше будь-яка незакомічена правка
+# читається як провал пакування — саме так ця перевірка вже давала фальшиве падіння.
 echo "▸ інструментарій у кеші = інструментарій у коміті"
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+  echo "  ℹ робоче дерево має незакомічені правки — перевіряється $ref, не вони"
+fi
 for p in $(ours); do
   for d in $(find "$HOME/.claude/plugins/cache/$mkt/$p" -type d -name scripts 2>/dev/null); do
     skill=$(basename "$(dirname "$d")")
-    if diff -rq "$d" "$PLUGDIR/$p/skills/$skill/scripts" >/dev/null 2>&1; then
+    if diff -rq "$d" "$tmp/clone/$PLUGDIR/$p/skills/$skill/scripts" >/dev/null 2>&1; then
       echo "  ✓ $p/$skill"
     else
       echo "  ✗ $p/$skill: у кеші не те, що в коміті"; fail=1

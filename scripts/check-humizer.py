@@ -21,7 +21,9 @@ import re, sys, zipfile
 IDS = re.compile(r'(?<![A-Za-zА-Яа-я0-9])(?:ST|D|X|G|Q|C|P|R|A)-\d{1,3}(?![0-9])')
 TAGS = re.compile(r'\[(?:КО|ВО|ПП)\]')
 LEVELS = re.compile(r'[🔴🟡🟢🟠]')
-TRANSCRIPT = re.compile(r'Speaker\s*\d|tldv|tl;dv|\b\d{1,2}:\d{2}:\d{2}\b')
+# Fathom — інструмент запису дому; посилання виглядає як fathom.video/share/<токен>.
+# tldv лишається в переліку: старі транскрипти нікуди не зникли.
+TRANSCRIPT = re.compile(r'Speaker\s*\d|fathom\.video|fathom|tldv|tl;dv|\b\d{1,2}:\d{2}:\d{2}\b', re.I)
 # ── §4 фільтр чутливого: механіка розрахунку
 MECHANICS = [
     (re.compile(r'коефіцієнт', re.I), 'коефіцієнт вилки — механіка розрахунку (§4)'),
