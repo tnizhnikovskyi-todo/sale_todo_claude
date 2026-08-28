@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Складено | 2026-08-28, реліз `0.3.0` (комміт із цим файлом) |
+| Складено | 2026-08-28, реліз `0.3.0` — ідентифікується коммітом `f9b8b5a`, **не тегом**: пуш тегів у цьому середовищі віддає HTTP 403 при робочому пуші гілки |
 | Джерело | `tnizhnikovskyi-todo/sale_todo_claude`, гілка `claude/continue-chat-work-b8dstk` |
 | Ціль | `todoltd/claude-methodology-marketplace` |
 | Стан | **перенесено.** PR [todoltd/claude-methodology-marketplace#3](https://github.com/todoltd/claude-methodology-marketplace/pull/3) · маркетплейс цілі `todo-odoo19-methodology`, каталог плагінів `plugins/` |

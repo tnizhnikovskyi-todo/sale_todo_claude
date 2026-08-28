@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| Джерело | `tnizhnikovskyi-todo/sale_todo_claude`, тег **`v0.3.0`** |
+| Джерело | `tnizhnikovskyi-todo/sale_todo_claude`, комміт **`f9b8b5a`** (тега немає: пуш тегів у цьому середовищі віддає HTTP 403, і на тег ніщо не спирається) |
 | Що переносимо | 3 плагіни (18 скілів) + контракти, перевірки, ресурси, фікстури, звіти |
 | Чого НЕ переносимо | `CLAUDE.md`, `.gitignore`, CI, `README.md`, `CHANGELOG.md` джерела |
 | Готова автоматизація | `.github/workflows/sync-to-methodology.yml` у джерелі — увімкнути **після** цього переносу |
@@ -37,7 +37,8 @@
 
 ```bash
 git checkout -b feature/sales-phase
-git clone --depth 1 --branch v0.3.0 \
+# тега немає — гілка вказує на f9b8b5a
+git clone --depth 1 --branch claude/continue-chat-work-b8dstk \
   https://github.com/tnizhnikovskyi-todo/sale_todo_claude /tmp/sales-src
 ```
 
@@ -98,8 +99,10 @@ cd ..
 
 ```bash
 git add -A && git commit -m "Фаза продажів 0.3.0"
-git clone . /tmp/target-check && cd /tmp/target-check
-claude plugin marketplace add .
+git clone . /tmp/target-check
+# саму крапку CLI відкидає («Invalid marketplace source format») — потрібен
+# абсолютний шлях або ./path
+claude plugin marketplace add /tmp/target-check
 claude plugin install odoo19-sales-prep@<ім'я вашого маркетплейсу>
 claude plugin details odoo19-sales-prep@<ім'я> | head -20
 ```
@@ -110,14 +113,35 @@ claude plugin details odoo19-sales-prep@<ім'я> | head -20
   провал**, навіть якщо установка написала «успішно»;
 - конвейєр `.docx` збирається з каталогу встановленого скіла:
 
+Шлях у кеші — `<маркетплейс>/<плагін>/<версія>/skills/...`, без вкладеного `plugins/`:
+
+> **Кеш плагінів переживає `marketplace remove`.** Пошук без прив'язки до імені
+> маркетплейсу знаходить і старі версії, і залишки тестових маркетплейсів — і може
+> віддати шлях зі зламаної установки. Тому шлях шукається **в межах свого
+> маркетплейса**, а всі збіги друкуються: їх мусить бути видно.
+
 ```bash
-d=~/.claude/plugins/cache/*/odoo19-sales-demo/*/plugins/odoo19-sales-demo/skills/presale-pack-builder
-python3 $d/scripts/make-docx.py $d/assets/questionnaire/анкета.md /tmp/t.docx --title Тест
-python3 $d/scripts/check-docx.py /tmp/t.docx
-python3 $d/scripts/check-humizer.py /tmp/t.docx
+mkt=<ім'я вашого маркетплейсу>
+find ~/.claude/plugins/cache/"$mkt" \
+  -path "*odoo19-sales-demo/*/skills/presale-pack-builder/scripts/make-docx.py"
+# якщо збігів кілька — це різні версії в кеші; беріть свою свідомо
+d=$(dirname $(dirname $(find ~/.claude/plugins/cache/"$mkt" \
+  -path "*odoo19-sales-demo/*/skills/presale-pack-builder/scripts/make-docx.py" \
+  | sort | tail -1)))
+echo "$d"   # мусить закінчуватись на skills/presale-pack-builder
+# анкету спершу заповнити: у шаблоні два плейсхолдери-інструкції, і check-docx.py
+# падає на них ЗА ПРИЗНАЧЕННЯМ — так само робить test-docx.sh фази
+sed -e 's/\[⚠️ ІНСТРУКЦІЯ: назва компанії клієнта\]/ЗРАЗОК/' \
+    -e 's/\[⚠️ ІНСТРУКЦІЯ: РРРР-ММ-ДД\]/2026-08-28/' \
+    "$d/assets/questionnaire/анкета.md" > /tmp/anketa.md
+python3 $d/scripts/make-docx.py /tmp/anketa.md /tmp/t.docx --title Анкета
+python3 $d/scripts/check-docx.py /tmp/t.docx      # ок — стиль фірмовий
+python3 $d/scripts/check-humizer.py /tmp/t.docx   # ок — внутрішніх слідів немає
 ```
 
-Прибрати за собою: `claude plugin uninstall`, `marketplace remove`, `rm -rf /tmp/target-check`.
+Прибрати за собою: `claude plugin uninstall`, `marketplace remove`,
+`rm -rf /tmp/target-check` — **і кеш**: `rm -rf ~/.claude/plugins/cache/<ім'я>`.
+`marketplace remove` кеш не чистить, і наступний прогін знайде в ньому стару версію.
 
 ## 6. PR
 
@@ -137,6 +161,18 @@ PR у дефолтну гілку. У тілі — що перенесено, щ
 - **Не переносити робочі артефакти** прогонів (журнали, КП, анкети конкретних угод):
   у них назви компаній і суми. У git джерела їх немає, у `/tmp` — є.
 - **Не класти `category` у `plugin.json`** — це поле запису маркетплейсу.
+
+---
+
+## Уже відомо (прогін 2026-08-28 на CLI 2.1.250)
+
+Перенос виконано, PR `todoltd/claude-methodology-marketplace#3`. Відповіді на
+чотири питання нижче: `PLUGIN_ROOT` = `plugins`; `sales-phase/` лишилась під тією
+ж назвою; маркетплейс — **`todo-odoo19-methodology`**; версія фази лишається
+окремою `0.3.0` — у цілі верхньоуровневої версії маркетплейсу немає взагалі,
+версії по-плагінно, тому правило парності в `check-manifests.sh` послаблювати не
+треба. Крок 5: `Skills` 7 / 6 / 5, `validate` без попереджень, конвейєр `.docx`
+збирається з каталогу встановленого скіла.
 
 ---
 
