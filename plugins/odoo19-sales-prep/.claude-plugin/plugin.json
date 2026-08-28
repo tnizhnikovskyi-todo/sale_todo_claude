@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "odoo19-sales-prep",
   "displayName": "Odoo 19 · Продажі · підготовка",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Фаза 0, стадії Первинна обробка – Qualified. Сім скілів: підготовка до брифу, розбір транскрипту брифу в журнал продажу, чернетка follow-up, оцінка повноти даних і коефіцієнт вилки, попередня оцінка з білими плямами, план демо-збірки, заморозка і розморозка відкладених угод.",
   "author": {
     "name": "ToDo"

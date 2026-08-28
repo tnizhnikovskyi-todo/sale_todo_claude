@@ -5,7 +5,7 @@
     "url": "https://github.com/tnizhnikovskyi-todo/sale_todo_claude"
   },
   "description": "Фаза 0 методології Odoo 19 — продажі: від першого дотику до передачі угоди в трек впровадження.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "metadata": {
     "pluginRoot": "./plugins"
   },
@@ -15,7 +15,7 @@
       "source": "odoo19-sales-prep",
       "displayName": "Odoo 19 · Продажі · підготовка",
       "description": "Стадії Первинна обробка – Qualified: підготовка до брифу, розбір брифу в журнал продажу, follow-up, повнота даних і коефіцієнт вилки, попередня оцінка, план демо-збірки, заморозка і розморозка відкладених угод.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "sales",
       "keywords": ["odoo", "sales", "presale", "brief", "estimate"]
     },
@@ -24,7 +24,7 @@
       "source": "odoo19-sales-demo",
       "displayName": "Odoo 19 · Продажі · демо",
       "description": "Стадія S4: збірка демо-бази, план проведення демо, пакет із п'яти документів, розбір демо і стоп-сигнали, follow-up, питання клієнта до повторної зустрічі.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "sales",
       "keywords": ["odoo", "sales", "demo", "presale"]
     },
@@ -33,7 +33,7 @@
       "source": "odoo19-sales-offer",
       "displayName": "Odoo 19 · Продажі · КП і передача",
       "description": "Стадії Proposition – Contract signing: фінальний пакет і КП, аргументація до захисту, підсумок захисту, аналіз патернів утрат по галузі, досьє передачі в трек впровадження.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "sales",
       "keywords": ["odoo", "sales", "offer", "handover"]
     }
