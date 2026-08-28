@@ -3,6 +3,7 @@
 set -euo pipefail
 export LC_ALL=C.utf8   # без цього grep працює в байтовому режимі і кириличні діапазони [иу] не збігаються
 cd "$(dirname "$0")/.."
+. ./scripts/lib-scope.sh
 
 n=0
 while read -r src dests; do
@@ -29,7 +30,7 @@ for src in shared/examples/*.md; do
   slug=$(basename "$src" .md)
   # без `ls | head`: під pipefail головна команда конвеєра ловить SIGPIPE і падає
   d=""
-  for cand in plugins/*/skills/"$slug"; do [ -d "$cand" ] && { d="$cand"; break; }; done
+  for cand in $(ours | sed "s#^#$PLUGDIR/#" | sed "s#\$#/skills/$slug#"); do [ -d "$cand" ] && { d="$cand"; break; }; done
   [ -n "$d" ] || { echo "НЕМАЄ скіла для приклада $slug" >&2; exit 1; }
   mkdir -p "$d/references"
   {

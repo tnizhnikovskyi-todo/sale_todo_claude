@@ -4,6 +4,7 @@
 set -uo pipefail
 export LC_ALL=C.utf8
 cd "$(dirname "$0")/.."
+. ./scripts/lib-scope.sh
 
 fail=0
 
@@ -14,7 +15,10 @@ bad = 0
 m = json.load(open('.claude-plugin/marketplace.json'))
 declared = {p['name']: p for p in m['plugins']}
 
-for f in sorted(glob.glob('plugins/*/.claude-plugin/plugin.json')):
+ours = [l.split('#')[0].strip() for l in open('scripts/our-plugins.txt', encoding='utf-8')]
+ours = [o for o in ours if o]
+root = os.environ.get('PLUGDIR', 'plugins')
+for f in [f'{root}/{o}/.claude-plugin/plugin.json' for o in ours if os.path.isfile(f'{root}/{o}/.claude-plugin/plugin.json')]:
     p = json.load(open(f))
     d = os.path.basename(os.path.dirname(os.path.dirname(f)))
     if p['name'] != d:
@@ -24,15 +28,15 @@ for f in sorted(glob.glob('plugins/*/.claude-plugin/plugin.json')):
     if p.get('version') != m.get('version'):
         print(f'  ✗ {p["name"]}: версія {p.get("version")} ≠ версії маркетплейсу {m.get("version")}')
         bad = 1
-    skills = glob.glob(f'plugins/{d}/skills/*/SKILL.md')
+    skills = glob.glob(f'{root}/{d}/skills/*/SKILL.md')
     if not skills:
         print(f'  ✗ {p["name"]}: жодного SKILL.md'); bad = 1
 
 for name in declared:
-    if not os.path.isfile(f'plugins/{name}/.claude-plugin/plugin.json'):
+    if name in ours and not os.path.isfile(f'{root}/{name}/.claude-plugin/plugin.json'):
         print(f'  ✗ у marketplace.json є {name}, а плагіна в plugins/ немає'); bad = 1
 
-total = len(glob.glob('plugins/*/skills/*/SKILL.md'))
+total = sum(len(glob.glob(f'{root}/{o}/skills/*/SKILL.md')) for o in ours)
 print(f'  плагінів: {len(declared)} · скілів: {total} · версія: {m.get("version")}')
 sys.exit(bad)
 PY
@@ -42,7 +46,7 @@ if command -v claude >/dev/null 2>&1; then
   claude plugin validate . >/dev/null 2>&1 \
     && echo "  маркетплейс: ок" \
     || { echo "  ✗ маркетплейс не пройшов claude plugin validate"; fail=1; }
-  for p in plugins/*/; do
+  for p in $(our_plugin_dirs); do
     claude plugin validate "$p" >/dev/null 2>&1 \
       && echo "  $(basename "$p"): ок" \
       || { echo "  ✗ $(basename "$p") не пройшов claude plugin validate"; fail=1; }

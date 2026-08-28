@@ -4,6 +4,7 @@
 set -uo pipefail
 export LC_ALL=C.utf8   # без цього grep працює в байтовому режимі і кириличні діапазони [иу] не збігаються
 cd "$(dirname "$0")/.."
+. ./scripts/lib-scope.sh
 
 fail=0
 found=0
@@ -12,7 +13,7 @@ need () { # need <файл> <опис> <grep-патерн>
   grep -qE -- "$3" "$1" || { echo "  ✗ $2"; fail=1; }
 }
 
-for f in plugins/*/skills/*/SKILL.md; do
+for f in $(our_skill_files); do
   [ -e "$f" ] || continue
   found=$((found+1))
   dir=$(dirname "$f"); slug=$(basename "$dir")
@@ -116,7 +117,7 @@ done
 # --- довідник прикладів обовʼязковий ---
 echo "▸ довідники прикладів"
 stubs=0
-for f in plugins/*/skills/*/SKILL.md; do
+for f in $(our_skill_files); do
   [ -e "$f" ] || continue
   d=$(dirname "$f"); slug=$(basename "$d")
   if [ ! -f "$d/references/examples.md" ]; then
@@ -131,7 +132,7 @@ done
 
 # --- хто читає журнал, мусить мати його контракт ---
 echo "▸ контракт журналу в тих, хто журнал читає"
-for f in plugins/*/skills/*/SKILL.md; do
+for f in $(our_skill_files); do
   [ -e "$f" ] || continue
   d=$(dirname "$f"); slug=$(basename "$d")
   reads_block=$(sed -n '/\*\*Читання вх/,/^\*\*[^Ч]/p' "$f")
@@ -155,7 +156,7 @@ if a.group(1) != b.group(1):
 PYCHK
 
 # --- перехресні посилання: чи існує кожен згаданий скіл ---
-OURS=$(ls -d plugins/*/skills/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null | sort -u)
+OURS=$(our_skill_files | xargs -n1 dirname 2>/dev/null | xargs -n1 basename 2>/dev/null | sort -u)
 HOUSE="sales-handover-analyzer session-transcript-analyzer meeting-protocol-builder
 kickoff-transcript-analyzer kickoff-survey-protocol odoo-spec-writer tr-usecases-acceptance
 tr-odoo-tech-design tr-effort-instruction tr-review tr-registry-update tr-change-request
@@ -167,7 +168,7 @@ config-review data-migration-planner go-live-runbook user-training-builder hyper
 acceptance-act-builder odoo-architecture scaffolding code-dev testing pr-review
 security-review skill-creator"
 # назви плагінів — не скіли, посилання на них легітимні
-PLUGINS=$(ls -d plugins/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null; echo "odoo19-discovery-initiation
+PLUGINS=$(ours; echo "odoo19-discovery-initiation
 odoo19-discovery-sessions odoo19-discovery-closeout odoo19-tr-authoring odoo19-mvp-build
 odoo19-implementation odoo-connector")
 KNOWN=$(printf '%s\n%s\n%s\n' "$OURS" "$HOUSE" "$PLUGINS" | tr ' ' '\n' | sed '/^$/d' | sort -u)
@@ -175,7 +176,7 @@ KNOWN=$(printf '%s\n%s\n%s\n' "$OURS" "$HOUSE" "$PLUGINS" | tr ' ' '\n' | sed '/
 echo "▸ стик із треком упровадження"
 # дев'ять блоків контракту передачі мусять бути в скілі досьє — дослівно.
 # Розійдуться тихо: обидва файли лишаться валідними, а споживач не знайде блоку.
-d=plugins/odoo19-sales-offer/skills/handover-dossier-builder/SKILL.md
+d="$PLUGDIR/odoo19-sales-offer/skills/handover-dossier-builder/SKILL.md"
 n=0
 while IFS='|' read -r _ num name _; do
   name=$(echo "$name" | sed 's/^ *//; s/ *$//; s/\*\*//g')
@@ -193,7 +194,7 @@ echo "▸ тригерні фрази ланцюга"
 python3 scripts/check-triggers.py || fail=1
 
 echo "▸ перехресні посилання"
-for f in plugins/*/skills/*/SKILL.md; do
+for f in $(our_skill_files); do
   [ -e "$f" ] || continue
   for r in $(grep -oE '`[a-z][a-z0-9]+(-[a-z0-9]+){1,4}`' "$f" | tr -d '`' | sort -u); do
     case "$r" in *.md|*.json|*.sh|*.ltd|*.com|*.ua) continue ;; esac

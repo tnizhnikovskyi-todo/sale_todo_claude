@@ -27,8 +27,11 @@ BLOCK = re.compile(r'\n\s*>?\s*(?:[•\-*]|\d+\.)\s*|\n\n|\n\|')
 
 
 def main():
+    root = os.environ.get('PLUGDIR', 'plugins')
+    ours = [l.split('#')[0].strip() for l in open('scripts/our-plugins.txt', encoding='utf-8')]
     skills = {os.path.basename(os.path.dirname(f)): f
-              for f in glob.glob('plugins/*/skills/*/SKILL.md')}
+              for o in ours if o
+              for f in glob.glob(f'{root}/{o}/skills/*/SKILL.md')}
     if not skills:
         print('  ✗ жодного SKILL.md не знайдено — перевірка безпредметна')
         return 1
