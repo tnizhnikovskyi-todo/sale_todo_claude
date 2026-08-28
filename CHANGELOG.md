@@ -5,6 +5,14 @@ CI перевіряє це на кожен push.
 
 ## 0.3.0 — 2026-08-28
 
+**Фаза переїхала в маркетплейс методології.** Каталоги трьох плагінів і спільні
+частини — у `todoltd/claude-methodology-marketplace`, PR
+[todoltd/claude-methodology-marketplace#3](https://github.com/todoltd/claude-methodology-marketplace/pull/3).
+Імені маркетплейсу `todo-odoo19-sales` більше немає — залишилось
+`todo-odoo19-methodology`, і команді ставити нічого не треба: він підключений
+централізовано в Organization settings. Цей репозиторій лишається джерелом розробки;
+синхронізацію робить `.github/workflows/sync-to-methodology.yml`.
+
 **Скілів 18, релізом нічого не додано.** Це версія обкатки: чотири прогони на живих
 угодах CRM і те, що вони знайшли. Жодна знахідка не з'явилась із читання — усі
 вісім із них вилізли на реальному матеріалі.

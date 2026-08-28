@@ -15,21 +15,37 @@
 
 ## Як поставити
 
+> **Команді ToDo робити нічого не потрібно.** Маркетплейс методології підключений
+> централізовано в Organization settings — плагіни фази продажів приходять разом
+> із рештою методології.
+
+Якщо потрібно поставити вручну — з маркетплейсу методології, **не з цього репозиторію**:
+
 ```bash
-claude plugin marketplace add tnizhnikovskyi-todo/sale_todo_claude
-claude plugin install odoo19-sales-prep@todo-odoo19-sales
-claude plugin install odoo19-sales-demo@todo-odoo19-sales
-claude plugin install odoo19-sales-offer@todo-odoo19-sales
+claude plugin marketplace add todoltd/claude-methodology-marketplace
+claude plugin install odoo19-sales-prep@todo-odoo19-methodology
+claude plugin install odoo19-sales-demo@todo-odoo19-methodology
+claude plugin install odoo19-sales-offer@todo-odoo19-methodology
 ```
 
-У TUI те саме робиться через `/plugin`. Оновити після змін у репозиторії —
-`claude plugin marketplace update todo-odoo19-sales`.
+У TUI те саме робиться через `/plugin`. Оновити —
+`claude plugin marketplace update todo-odoo19-methodology`.
 
 Плагіни можна ставити окремо: `prep` працює самостійно, `demo` очікує журнал
 від `prep`, `offer` — журнал і пакет від попередніх двох.
 
-**Установку перевірено на релізі 0.3.0** з чистого клону: маркетплейс додається,
-три плагіни ставляться, `claude plugin validate` проходить на маркетплейсі й на
+**Фаза переїхала.** Каталоги трьох плагінів і спільні частини лежать у
+`todoltd/claude-methodology-marketplace`; імені маркетплейсу `todo-odoo19-sales`
+більше немає — залишилось `todo-odoo19-methodology`. Цей репозиторій лишається
+**джерелом розробки**: тут `shared/` як джерело правди, перевірки, фікстури й звіти
+прогонів, а `.claude-plugin/marketplace.json` тримається тільки для CI (парність
+версій і `claude plugin validate`). Ставити з нього не треба.
+
+Синхронізація в маркетплейс методології — `.github/workflows/sync-to-methodology.yml`;
+порядок і пастки описані в `docs/migration-plan.md`.
+
+**Установку перевірено на релізі 0.3.0** з чистого клону цього репозиторію:
+маркетплейс додається, три плагіни ставляться, `claude plugin validate` проходить на маркетплейсі й на
 кожному плагіні, а конвейєр `.docx` збирає документ **із каталогу встановленого
 скіла** — без доступу до кореня репозиторію. Це головна перевірка пакування:
 встановлений плагін кореня не бачить, тому `scripts/` і `assets/` лежать усередині

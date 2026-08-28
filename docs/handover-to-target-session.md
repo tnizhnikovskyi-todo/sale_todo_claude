@@ -1,5 +1,10 @@
 # Чекліст для сесії на `todoltd/claude-methodology-marketplace`
 
+> ✅ **Виконано.** Перенос зроблений, PR
+> [todoltd/claude-methodology-marketplace#3](https://github.com/todoltd/claude-methodology-marketplace/pull/3).
+> Файл лишається як запис того, що саме робилось і за якими критеріями приймалось.
+> Повторно не виконувати.
+
 Виконувати згори вниз. Кожен крок має **критерій приймання** — не переходити далі,
 поки він не виконаний. Повний контекст і обґрунтування — `docs/migration-plan.md`
 у джерелі; тут тільки дії.

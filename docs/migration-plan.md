@@ -5,9 +5,21 @@
 | Складено | 2026-08-28, реліз `0.3.0` (комміт із цим файлом) |
 | Джерело | `tnizhnikovskyi-todo/sale_todo_claude`, гілка `claude/continue-chat-work-b8dstk` |
 | Ціль | `todoltd/claude-methodology-marketplace` |
-| Стан | **план. Нічого не перенесено** |
+| Стан | **перенесено.** PR [todoltd/claude-methodology-marketplace#3](https://github.com/todoltd/claude-methodology-marketplace/pull/3) · маркетплейс цілі `todo-odoo19-methodology`, каталог плагінів `plugins/` |
 
-> ⚠️ **Цільовий репозиторій не читався.** Сесія, у якій складений план, стартувала
+> ✅ **Перенос відбувся.** Далі — історія рішень і довідник для синхронізації,
+> **не інструкція до виконання**. Не переносити вдруге: каталоги фази вже в цілі,
+> а `.claude-plugin/marketplace.json` там генерується. Оновлення тепер робить
+> `.github/workflows/sync-to-methodology.yml` (розділ 6).
+>
+> Що з'ясувалось при переносі й чого немає нижче:
+> **у цілі немає верхньоуровневої версії маркетплейсу** — версії по-плагінно. Тому
+> правило парності в `check-manifests.sh` **лишається як є**: воно звіряє версії наших
+> трьох `plugin.json` із `marketplace.json` **джерела**, і це коректно.
+> Дефолти `sync-to-methodology.yml` (`plugin_root: plugins`,
+> `target_repo: todoltd/claude-methodology-marketplace`) теж правильні й не змінювались.
+>
+> ⚠️ **Цільовий репозиторій не читався з тієї сесії, у якій складався план.** Сесія, у якій складений план, стартувала
 > на `sale_todo_claude`, і додати репозиторій іншого власника вона не може:
 > `add_repo` → «cross-tier adds are not supported in v1», GitHub напряму → «Access
 > denied: repository is not configured for this session». Розблоковує це **нова сесія,
