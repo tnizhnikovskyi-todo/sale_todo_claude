@@ -171,6 +171,23 @@ odoo19-discovery-sessions odoo19-discovery-closeout odoo19-tr-authoring odoo19-m
 odoo19-implementation odoo-connector")
 KNOWN=$(printf '%s\n%s\n%s\n' "$OURS" "$HOUSE" "$PLUGINS" | tr ' ' '\n' | sed '/^$/d' | sort -u)
 
+echo "▸ стик із треком упровадження"
+# дев'ять блоків контракту передачі мусять бути в скілі досьє — дослівно.
+# Розійдуться тихо: обидва файли лишаться валідними, а споживач не знайде блоку.
+d=plugins/odoo19-sales-offer/skills/handover-dossier-builder/SKILL.md
+n=0
+while IFS='|' read -r _ num name _; do
+  name=$(echo "$name" | sed 's/^ *//; s/ *$//; s/\*\*//g')
+  [ -n "$name" ] || continue
+  n=$((n+1))
+  grep -qF "$name" "$d" || { echo "  ✗ блок «$name» є в handover_contract.md, але не в скілі досьє"; fail=1; }
+done < <(awk '/^\| # \| Блок \|/{f=1;next} f&&/^\|---/{next} f&&/^\|/{print} f&&!/^\|/{exit}' shared/handover_contract.md)
+if [ "$n" -ne 9 ]; then
+  echo "  ✗ у handover_contract.md розібрано $n блоків, а має бути 9 — таблиця з'їхала"; fail=1
+else
+  echo "  блоків стику звірено: $n"
+fi
+
 echo "▸ тригерні фрази ланцюга"
 python3 scripts/check-triggers.py || fail=1
 
