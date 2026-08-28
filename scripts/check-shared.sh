@@ -3,16 +3,17 @@
 set -euo pipefail
 export LC_ALL=C.utf8   # без цього grep працює в байтовому режимі і кириличні діапазони [иу] не збігаються
 cd "$(dirname "$0")/.."
+. ./scripts/lib-scope.sh   # PLUGDIR: у дереві цілі каталог плагінів лежить не поруч
 
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
-cp -a plugins "$tmp/before"
+cp -a "$PLUGDIR" "$tmp/before"
 ./scripts/sync-shared.sh > /dev/null
 
-if diff -rq "$tmp/before" plugins > "$tmp/diff" 2>&1; then
+if diff -rq "$tmp/before" "$PLUGDIR" > "$tmp/diff" 2>&1; then
   echo "OK — спільні контракти синхронні"
 else
   echo "РОЗХОДЖЕННЯ: копію правили руками замість shared/" >&2
   cat "$tmp/diff" >&2
-  rm -rf plugins && cp -a "$tmp/before" plugins
+  rm -rf "$PLUGDIR" && cp -a "$tmp/before" "$PLUGDIR"
   exit 1
 fi

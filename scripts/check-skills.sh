@@ -143,10 +143,12 @@ done
 
 # --- формула коефіцієнта мусить бути дослівною копією контракту ---
 echo "▸ формула коефіцієнта"
-python3 - <<'PYCHK' || fail=1
-import re, sys
+PLUGDIR="$PLUGDIR" python3 - <<'PYCHK' || fail=1
+import os, re, sys
 c = open('shared/deal_journal_template.md', encoding='utf-8').read()
-d = open('plugins/odoo19-sales-prep/skills/data-completeness-scorer/SKILL.md', encoding='utf-8').read()
+d = open(os.path.join(os.environ.get('PLUGDIR', 'plugins'),
+                      'odoo19-sales-prep/skills/data-completeness-scorer/SKILL.md'),
+         encoding='utf-8').read()
 g = lambda t: re.search(r'```\n(\u0454 \u0445\u043e\u0447 \u043e\u0434\u043d\u0435.*?)\n```', t, re.S)
 a, b = g(c), g(d)
 if not a or not b:

@@ -11,6 +11,9 @@ while read -r src dests; do
   case "$src" in \#*) continue ;; esac
   [ -f "shared/$src" ] || { echo "НЕМАЄ shared/$src" >&2; exit 1; }
   for d in $dests; do
+    # shared-map.txt зберігає шляхи з префіксом `plugins/` — у дереві цілі
+    # каталог плагінів інший, тому префікс перекладаємо на PLUGDIR
+    d="$PLUGDIR/${d#plugins/}"
     [ -d "$d" ] || { echo "НЕМАЄ каталогу скіла $d" >&2; exit 1; }
     mkdir -p "$d/references"
     {
@@ -50,6 +53,7 @@ t=0
 docx_dests=$(sed -e ':a' -e '/\\$/{N;s/\\\n//;ba' -e '}' scripts/shared-map.txt \
              | awk '$1=="docx_style.md"{for(i=2;i<=NF;i++)print $i}')
 for d in $docx_dests; do
+  d="$PLUGDIR/${d#plugins/}"
   [ -d "$d" ] || { echo "НЕМАЄ каталогу скіла $d" >&2; exit 1; }
   mkdir -p "$d/scripts" "$d/assets"
   for f in make-docx.py check-docx.py check-humizer.py; do

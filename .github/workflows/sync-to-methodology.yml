@@ -76,6 +76,7 @@ jobs:
       - name: Перенести дерево фази
         run: |
           set -euo pipefail
+          command -v rsync >/dev/null || { echo "::error::на раннері немає rsync"; exit 1; }
           cd source
           ours=$(sed 's/#.*//' scripts/our-plugins.txt | sed '/^[[:space:]]*$/d')
           cd ..
@@ -94,8 +95,36 @@ jobs:
           rsync -a "source/docs/" "target/sales-phase/docs/"
           cp source/scripts/our-plugins.txt "target/sales-phase/scripts/our-plugins.txt"
 
-          # НЕ переносимо: marketplace.json, CLAUDE.md, .gitignore, CI, README,
-          # CHANGELOG — вони в цілі зливаються руками один раз (migration-plan.md §3)
+          # НЕ переносимо: CLAUDE.md, .gitignore, CI, README, CHANGELOG —
+          # вони в цілі зливаються руками один раз (migration-plan.md §3)
+
+      - name: Маніфест цілі
+        working-directory: target
+        run: |
+          set -euo pipefail
+          # marketplace.json у цілі ГЕНЕРУЄТЬСЯ (gen-manifest.py, його ж кличе
+          # їхній sync-marketplace.sh) — записи руками не зливаються, затерлись би.
+          # Без цього кроку каталоги фази лежали б у plugins/, а організація їх не
+          # бачила б до наступного релізу методології.
+          if [ ! -f gen-manifest.py ]; then
+            echo "::error::у цілі немає gen-manifest.py — потрібен їхній патч маркетплейсу"
+            exit 1
+          fi
+          python3 gen-manifest.py .
+          # Якщо фази немає в external-plugins.txt, повний реліз методології знесе її
+          # каталоги. На dry_run це попередження — щоб перший прогін показав, чого
+          # бракує. На справжньому переносі це падіння: PR, після якого наступний реліз
+          # тихо видаляє перенесене, гірший за відсутній PR.
+          if ! grep -q odoo19-sales-prep .claude-plugin/external-plugins.txt; then
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "::warning::фази немає в external-plugins.txt — додати до першого справжнього переносу"
+            else
+              echo "::error::фази немає в .claude-plugin/external-plugins.txt."
+              echo "Без цього рядка повний реліз методології знесе каталоги фази."
+              echo "Додайте фазу в external-plugins.txt цілі й запустіть перенос знову."
+              exit 1
+            fi
+          fi
 
       - name: Перевірки в дереві цілі
         working-directory: target/sales-phase
@@ -144,8 +173,9 @@ jobs:
             --body "Автоматичний перенос із \`${GITHUB_REPOSITORY}@${GITHUB_SHA:0:12}\`.
 
           Перенесено: каталоги трьох плагінів фази і \`sales-phase/\` (контракти,
-          перевірки, ресурси, фікстури, звіти).
-          **Не** торкалось: \`marketplace.json\`, \`CLAUDE.md\`, \`.gitignore\`, CI, README.
+          перевірки, ресурси, фікстури, звіти). \`marketplace.json\` і \`README.md\`
+          перегенеровані вашим \`gen-manifest.py\`.
+          **Не** торкалось: \`CLAUDE.md\`, \`.gitignore\`, CI.
 
           Перевірки пройдені **в дереві цілі**: check-shared, check-skills, test-docx,
           парність версій.
