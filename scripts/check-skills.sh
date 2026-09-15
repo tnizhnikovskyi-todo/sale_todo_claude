@@ -81,6 +81,8 @@ for f in $(our_skill_files); do
 
   # --- хто пише в живу базу, той тримає §10 конвенцій ---
   if grep -q 'odoo_write\|odoo_create' "$f"; then
+    # баз у конектора кілька; запис не в ту — це запис у чужу картку
+    grep -q 'connection_id' "$f" || { echo "  ✗ пише в базу, але не згадує connection_id — конектор бачить кілька баз (§11, крок 0)"; fail=1; }
     grep -q 'fields_get' "$f" || { echo "  ✗ пише в базу, але не згадує fields_get перед записом у selection-поле (§10 конвенцій)"; fail=1; }
     grep -qE '^- \[ \] \*\*Запис у selection-поле' "$f" || { echo "  ✗ пише в базу, але в Pre-save немає рядка «Запис у selection-поле … §10 конвенцій»"; fail=1; }
   fi

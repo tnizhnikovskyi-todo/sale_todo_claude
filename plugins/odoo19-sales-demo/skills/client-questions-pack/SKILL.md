@@ -40,6 +40,7 @@ description: >
 ## Інструменти та середовище
 
 **Читання вхідних файлів:**
+- **`connection_id` у кожному виклику** (§11, крок 0): робоча база — `default`; без нього виклик падає
 - **Транскрипція зустрічі — у базі (§12 конвенцій).** `survey.user_input`, домен
   `[["td_res_model_str","=","crm.lead"],["td_res_id","=",<id>]]`, поле `td_transcript` —
   дослівно. Зустріч вибирай за `td_google_videocall_location`. Follow-up того ж
