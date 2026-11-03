@@ -69,7 +69,8 @@ description: >
 перевірки не побачать. Деталі переносу — `docs/migration-plan.md`.
 
 ```bash
-./scripts/check-humizer.py <файл>  # клієнтський документ: ID, теги, механіка, жаргон
+./scripts/check-humizer.py <файл>  # клієнтський документ: ID, теги, механіка, жаргон, мова (✗ блок / ⚠ попередження)
+./scripts/test-humizer.py    # мовні правила Humizer: кожна словоформа, cases.txt, брудні й чисті фікстури
 ./scripts/check-shared.sh    # копії спільних контрактів не правили руками
 ./scripts/check-skills.sh    # SKILL.md тримають конвенції вище
 ./scripts/check-triggers.py  # тригерні фрази «Наступного кроку» = description цілі

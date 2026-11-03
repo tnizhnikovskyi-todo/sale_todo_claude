@@ -171,5 +171,12 @@ hzp 'формат A4'         'Документ формату A4, станда�
 hzp 'назва з двокрапкою' 'Нова Пошта: обмін накладними за API.'
 hzp 'посада з двокрапкою' 'Відповідальний з боку Замовника: керівник проєкту.'
 
+echo "▸ Humizer: мовні правила — кожна форма, ручні кейси, фікстури (scripts/test-humizer.py)"
+if hzout=$(python3 -B scripts/test-humizer.py 2>&1); then
+  sed 's/^/  /' <<<"$hzout"
+else
+  sed 's/^/  /' <<<"$hzout"; fail=1
+fi
+
 echo
 [ "$fail" -eq 0 ] && echo "OK — конвейєр .docx тримається" || { echo "Є порушення" >&2; exit 1; }
