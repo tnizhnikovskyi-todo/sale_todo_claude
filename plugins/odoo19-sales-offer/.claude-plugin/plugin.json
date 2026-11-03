@@ -1,13 +1,11 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "odoo19-sales-offer",
   "displayName": "Odoo 19 · Продажі · КП і передача",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Фаза 0, стадії Proposition – Contract signing. П'ять скілів: фіналізація пакета і КП, аргументація до захисту КП, підсумок захисту, аналіз патернів утрат по галузі з архіву CRM, досьє передачі як вхід у sales-handover-analyzer.",
   "author": {
     "name": "ToDo"
   },
   "repository": "https://github.com/tnizhnikovskyi-todo/sale_todo_claude",
-  "keywords": ["odoo", "odoo19", "sales", "presale", "ukrainian"],
-  "defaultEnabled": true
+  "keywords": ["odoo", "odoo19", "sales", "presale", "ukrainian"]
 }
