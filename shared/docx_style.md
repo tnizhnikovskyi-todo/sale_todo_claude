@@ -34,7 +34,7 @@
 
 ```
 1. пишемо зміст у markdown-підмножині (розділ 3)     → чернетка_[документ].md
-2. проходимо Humizer                                  → блокуючий, за registers.md §3
+2. проходимо Humizer                                  → блокувальний, за registers.md §3
 3. python3 scripts/make-docx.py чернетка.md вихід.docx --title "…"
 4. python3 scripts/check-docx.py вихід.docx           → дев'ять перевірок стилю
 5. чернетку .md лишаємо поряд                         → з неї перевипускають версію
