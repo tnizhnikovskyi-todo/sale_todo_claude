@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 
 fail=0
 found=0
+letters=0   # скілів із клієнтським листом: перевірка каналу email адресована саме їм
 
 # скіли, у чиїх виходах за мапою регістрів є КП (registers.md §1а): рядок-продовження
 # з порожньою першою клітинкою належить скілу з рядка вище
@@ -81,6 +82,25 @@ for f in $(our_skill_files); do
     for need in scripts/make-docx.py scripts/check-docx.py scripts/check-humizer.py \
                 assets/docx-template/word/styles.xml assets/docx-boilerplate/про-odoo.md; do
       [ -f "$dir/$need" ] || { echo "  ✗ віддає .docx, але в скілі немає $need — перезапусти sync-shared.sh"; fail=1; }
+    done
+  fi
+
+  # --- хто викликає чекер Humizer, той несе його копію: плагін кореня репозиторію не бачить ---
+  if grep -q 'check-humizer\.py' "$f"; then
+    [ -f "$dir/scripts/check-humizer.py" ] || { echo "  ✗ викликає check-humizer.py, але в скілі немає scripts/check-humizer.py — перезапусти sync-shared.sh"; fail=1; }
+  fi
+
+  # --- клієнтський лист → чекер у каналі email (registers.md §3, «Канал листа») ---
+  # Лист визначається структурно: у блоці збереження файл `лист_….md`. Без каналу email
+  # чекер не бачить `**` у тексті, який сейл копіює в пошту звичайним текстом
+  if grep -qE '`лист_[^`]*\.md`' <<<"$save_block"; then
+    letters=$((letters+1))
+    grep -qF 'check-humizer.py --channel email' "$f" || { echo "  ✗ пише клієнтський лист, але не прогоняє check-humizer.py --channel email"; fail=1; }
+    grep -qE '^- \[ \] .*check-humizer\.py --channel email' "$f" || { echo "  ✗ пише клієнтський лист, але в Pre-save немає рядка «check-humizer.py --channel email»"; fail=1; }
+    # саме рядок-коментар шаблону: у прозі Кроку Humizer ті самі слова стоять у `…`,
+    # і пошук «десь у файлі» лишався зеленим після видалення маркера з шаблону
+    for mk in 'ТІЛО ЛИСТА ПОЧИНАЄТЬСЯ ТУТ' 'ТІЛО ЛИСТА ЗАКІНЧУЄТЬСЯ ТУТ'; do
+      grep -qE -- "^<!--.*$mk.*-->\$" "$f" || { echo "  ✗ шаблон листа без рядка-маркера «<!-- … $mk … -->» — чекер не знайде тіло листа"; fail=1; }
     done
   fi
 
@@ -281,5 +301,7 @@ done
 
 echo
 if [ "$found" -eq 0 ]; then echo "SKILL.md не знайдено"; exit 0; fi
-echo "Перевірено скілів: $found"
+echo "Перевірено скілів: $found · із клієнтським листом (канал email): $letters"
+# перевірка, адресована нулю файлів, — не перевірка: блок збереження змінив вигляд
+[ "$letters" -ge 1 ] || { echo "  ✗ жодного скіла з \`лист_….md\` у блоці збереження — умова каналу email не діє"; fail=1; }
 [ "$fail" -eq 0 ] && echo "OK — конвенції дотримані" || { echo "Є порушення конвенцій" >&2; exit 1; }

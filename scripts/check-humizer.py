@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Машинна перевірка Humizer для клієнтських документів (регістр 3).
 
-    python3 scripts/check-humizer.py файл.md|файл.docx [...]
+    python3 scripts/check-humizer.py [--today РРРР-ММ-ДД] [--channel email] файл.md|файл.docx [...]
 
 Humizer оголошений блокувальним у кожному клієнтському скілі, але доводився лише
 вичиткою. Тут — та частина, яку можна перевірити механічно: усе з розділу
@@ -14,6 +14,24 @@ Humizer оголошений блокувальним у кожному кліє
   ⚠ попередження  — друкується, код виходу 0. Людина вирішує: «в рамках договору»
                      у договірній частині КП — норма жанру, «в кінці дня» буває
                      буквально про час доби. Тому кальки й канцелярит — попередження.
+
+Мʼякий старт (рішення власника 2026-11-04). Мовні правила прогону pass4 — чужі букви,
+невидимі символи, апостроф не ʼ, русизми, дієприкметники на -учий/-ючий, бот-хвости
+(класи PHASED) — до STRICT_FROM лише попереджають, а з цієї дати блокують. Дата живе
+тільки тут, у STRICT_FROM; кожне таке попередження друкує, з якого дня воно стане
+помилкою. Старі правила (ID, теги, рівні, транскрипт, механіка ціни, жаргон) блокують
+завжди. `--today` підміняє сьогоднішню дату — для тестів, щоб вони не залежали
+від календаря.
+
+Канал `--channel email` — для чернетки листа, який сейл копіює в пошту. Лист іде
+звичайним текстом, тому Markdown-розмітка в ньому — помилка (блокує завжди, мʼякого
+старту в неї немає): `**`, `__`, `#` на початку рядка, чекбокс `- [ ]`, зворотні лапки,
+таблиця (`|---|` або рядок, що починається з `|`). Розмітка шукається тільки в тілі
+листа: між маркерами `ТІЛО ЛИСТА ПОЧИНАЄТЬСЯ ТУТ` і `ТІЛО ЛИСТА ЗАКІНЧУЄТЬСЯ ТУТ`
+(немає першого — від початку файлу). Усе нижче кінцевого маркера — блок «Для сейла»:
+клієнту не йде, тому не перевіряється взагалі. Шапка чернетки вище тіла (Кому, Тема)
+проходить решту правил, але не розмітку. За замовчуванням (`.md`-документ, `.docx`)
+розмітка не помилка: `.md` складається в `.docx`, і `**` там стає жирним.
 
 Що НЕ перевіряється і лишається за людиною: тон, метафори, розмовні довіски,
 «X, а не Y» підсумком абзацу, пасив з виконавцем в орудному відмінку, кличний
@@ -48,10 +66,38 @@ Humizer оголошений блокувальним у кожному кліє
     — MIT © 2026 Dmitrii Voitenko.
 Ліцензії MIT дозволяють використання за умови збереження цих рядків.
 """
+import argparse
+import datetime
 import html
 import re
 import sys
 import zipfile
+
+# ── канал листа: маркери тіла в шаблонах client-followup-writer і demo-followup-writer
+BODY_START = 'ТІЛО ЛИСТА ПОЧИНАЄТЬСЯ ТУТ'
+BODY_END = 'ТІЛО ЛИСТА ЗАКІНЧУЄТЬСЯ ТУТ'
+CHANNELS = ('doc', 'email')
+# розмітка, яка в листі звичайним текстом лишиться сміттям
+MARKUP = [
+    (re.compile(r'\*\*'), '«**» (жирне)'),
+    (re.compile(r'__'), '«__» (жирне)'),
+    (re.compile(r'^[^\S\n]*#', re.M), '«#» на початку рядка (заголовок)'),
+    (re.compile(r'^[^\S\n]*[-*+][^\S\n]*\[[ xXхХ]?\]', re.M), '«- [ ]» (чекбокс)'),
+    (re.compile(r'`'), 'зворотні лапки «`» (код)'),
+]
+
+
+def table_line(line):
+    """Рядок таблиці Markdown: розділювач `|---|` у будь-якому написанні
+    (`| --- |`, `|:--|--:|`, `---|---`) або рядок, що починається з `|`."""
+    s = line.strip()
+    sep = '|' in s and '-' in s and set(s) <= set('|:- \t')
+    return sep or (s.startswith('|') and s.count('|') >= 2)
+
+
+# ── мʼякий старт: ЄДИНЕ місце дати. До STRICT_FROM (не включно) класи PHASED — попередження
+STRICT_FROM = datetime.date(2026, 11, 19)
+PHASED = ('букви', 'невидимі', 'апостроф', 'русизм', 'дієприкметник', 'бот-хвіст')
 
 # ── ID реєстрів журналу: «G-12», «Q-7», «ST-3» — головне, що не має дійти до клієнта
 IDS = re.compile(r'(?<![A-Za-zА-Яа-я0-9])(?:ST|D|X|G|Q|C|P|R|A)-\d{1,3}(?![0-9])')
@@ -287,13 +333,61 @@ def uniq(xs, limit=6):
     return s + (f' і ще {len(xs) - limit}' if len(xs) > limit else '')
 
 
-def findings(path):
-    """Список (рівень, клас, повідомлення). Рівень E — блокує, W — попереджає."""
+def strict(today=None):
+    """Чи діють уже правила PHASED як помилки. today — datetime.date або None (сьогодні)."""
+    return (today or datetime.date.today()) >= STRICT_FROM
+
+
+def letter_parts(txt):
+    """(клієнтська частина, тіло листа) чернетки: усе вище BODY_END і тіло між маркерами.
+    Рядки-маркери самі в текст не входять."""
+    lines = txt.split('\n')
+    end = next((i for i, x in enumerate(lines) if BODY_END in x), len(lines))
+    start = next((i for i, x in enumerate(lines[:end]) if BODY_START in x), -1)
+    client = [x for i, x in enumerate(lines[:end]) if i != start]
+    return '\n'.join(client), lines[start + 1:end]
+
+
+def markup(body):
+    """[(що, номер рядка тіла, рядок)] — перше входження кожного виду розмітки."""
+    hits = []
+    text = '\n'.join(body)
+    for rx, what in MARKUP:
+        m = rx.search(text)
+        if m:
+            ln = text[:m.start()].count('\n')
+            hits.append((what, ln + 1, body[ln]))
+    ln = next((i for i, x in enumerate(body) if table_line(x)), None)
+    if ln is not None:
+        hits.append(('таблиця «|---|»', ln + 1, body[ln]))
+    return hits
+
+
+def findings(path, today=None, channel='doc'):
+    """Список (рівень, клас, повідомлення). Рівень E — блокує, W — попереджає.
+    today — дата, на яку оцінюється мʼякий старт (None — сьогодні);
+    channel — 'doc' (документ .md/.docx) або 'email' (чернетка листа звичайним текстом)."""
+    if channel not in CHANNELS:
+        raise ValueError(f'невідомий канал {channel!r}: {CHANNELS}')
     out = []
+    _findings(path, out, channel)
+    if not strict(today):
+        note = f' [мʼякий старт: з {STRICT_FROM.isoformat()} це помилка]'
+        out = [(WARN, c, m + note) if l == ERR and c in PHASED else (l, c, m) for l, c, m in out]
+    return out
+
+
+def _findings(path, out, channel='doc'):
     try:
         txt = text_of(path)
     except Exception as e:
-        return [(ERR, 'файл', f'не читається: {e}')]
+        out.append((ERR, 'файл', f'не читається: {e}'))
+        return
+    if channel == 'email':
+        txt, body = letter_parts(txt)
+        for what, ln, line in markup(body):
+            out.append((ERR, 'розмітка', f'розмітка Markdown у тексті листа: {what}, рядок тіла {ln} '
+                        f'«{line.strip()[:60]}» — лист іде звичайним текстом, переписати без розмітки'))
 
     # директиви розмітки чернетки — не текст документа
     if path.endswith('.md'):
@@ -386,20 +480,36 @@ def findings(path):
     hits = RANGE_HYPHEN.findall(txt)
     if hits:
         w('діапазон', f'діапазон через дефіс {uniq(hits)} → «–» без пробілів: «3–4 тижні» (§7)')
-    return out
 
 
-def check(path):
+def check(path, today=None, channel='doc'):
     """Сумісність: лише помилки, рядками."""
-    return [msg for lvl, _, msg in findings(path) if lvl == ERR]
+    return [msg for lvl, _, msg in findings(path, today, channel) if lvl == ERR]
+
+
+def iso_date(s):
+    try:
+        return datetime.date.fromisoformat(s)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'дата не у форматі РРРР-ММ-ДД: {s!r}')
 
 
 def main():
-    if len(sys.argv) < 2:
-        raise SystemExit('вжиток: check-humizer.py файл.md|файл.docx [...]')
+    ap = argparse.ArgumentParser(prog='check-humizer.py',
+                                 description='Машинна частина Humizer для клієнтських документів')
+    ap.add_argument('--today', type=iso_date, default=None,
+                    help='дата РРРР-ММ-ДД замість сьогоднішньої (мʼякий старт; для тестів)')
+    ap.add_argument('--channel', choices=CHANNELS, default='doc',
+                    help='email — чернетка листа: Markdown-розмітка в тілі листа стає помилкою')
+    ap.add_argument('files', nargs='+', metavar='файл.md|файл.docx')
+    args = ap.parse_args()
     fail = 0
-    for p in sys.argv[1:]:
-        fs = findings(p)
+    if not strict(args.today):
+        print(f'ℹ мʼякий старт: мовні правила ({", ".join(PHASED)}) до '
+              f'{(STRICT_FROM - datetime.timedelta(days=1)).isoformat()} включно попереджають, '
+              f'з {STRICT_FROM.isoformat()} блокують')
+    for p in args.files:
+        fs = findings(p, args.today, args.channel)
         errs = [m for lvl, _, m in fs if lvl == ERR]
         warns = [m for lvl, _, m in fs if lvl == WARN]
         print(f'▸ {p}')

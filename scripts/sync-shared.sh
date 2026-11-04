@@ -73,4 +73,23 @@ for d in $docx_dests; do
   t=$((t+3))
 done
 
-echo "Розкладено копій: $n · довідників прикладів: $e · інструментарію .docx: $t"
+# --- чекер Humizer — кожному скілу, чий SKILL.md його викликає ---
+# Не лише тим, хто віддає .docx: лист після демо — клієнтський текст без .docx,
+# і без копії всередині скіла встановлений плагін викликав би файл, якого немає.
+# Мапи нема: умова — сам виклик у SKILL.md (check-skills.sh перевіряє ту саму умову).
+h=0
+for f in $(our_skill_files); do
+  grep -q 'check-humizer\.py' "$f" || continue
+  d=$(dirname "$f")
+  mkdir -p "$d/scripts"
+  {
+    echo "#!/usr/bin/env python3"
+    echo "# ЗГЕНЕРОВАНО з scripts/check-humizer.py скриптом scripts/sync-shared.sh."
+    echo "# Не правити тут — правки затираються. Канонічне джерело: scripts/check-humizer.py"
+    tail -n +2 "scripts/check-humizer.py"
+  } > "$d/scripts/check-humizer.py"
+  chmod +x "$d/scripts/check-humizer.py"
+  h=$((h+1))
+done
+
+echo "Розкладено копій: $n · довідників прикладів: $e · інструментарію .docx: $t · чекера Humizer: $h"

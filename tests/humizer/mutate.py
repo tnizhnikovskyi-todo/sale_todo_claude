@@ -4,7 +4,7 @@
 і переконуємось, що scripts/test-humizer.py червоніє. Пастка «зеленої перевірки»
 з CLAUDE.md — тест, який не падає на зламаному правилі, нічого не доводить.
 
-    python3 tests/humizer/mutate.py      # з кореня репозиторію; ~1 хв, у CI не входить
+    python3 tests/humizer/mutate.py      # з кореня репозиторію; ~2–3 хв, у CI не входить
 
 Мутація прописана заміною рядка: якщо рядок у чекері змінили, assert скаже,
 яку мутацію оновити.
@@ -31,6 +31,31 @@ muts={
  'тире-зʼєднувач не ловиться': ("        hits = BOLD_DASH.findall(p)","        hits = []"),
  'зʼєднувач посеред речення ловиться': ("BOLD_DASH = re.compile(r'^[^\\S\\n]*(?:[-*·•][^\\S\\n]+|\\d+[.)][^\\S\\n]+)?", "BOLD_DASH = re.compile(r'(?:"),
  'внутрішні „…“ ловляться': ("|“[^”“\\n]{1,200}”')", "|[“„][^”“\\n]{1,200}[”“]')"),
+ # ── мʼякий старт (рішення власника 2026-11-04)
+ 'мʼякий старт не діє': ("    if not strict(today):\n        note", "    if False:\n        note"),
+ 'дата строгості зсунута на день': ("STRICT_FROM = datetime.date(2026, 11, 19)", "STRICT_FROM = datetime.date(2026, 11, 20)"),
+ 'останній день мʼякого старту вже строгий': (") >= STRICT_FROM", ") >= STRICT_FROM - datetime.timedelta(days=1)"),
+ 'межа включно зʼїхала (> замість >=)': (") >= STRICT_FROM", ") > STRICT_FROM"),
+ 'старі правила теж мʼякі': ("PHASED = ('букви',", "PHASED = ('ID', 'механіка', 'букви',"),
+ 'русизм випав з мʼякого старту': ("'апостроф', 'русизм', 'дієприкметник'", "'апостроф', 'дієприкметник'"),
+ 'попередження без дати': ("note = f' [мʼякий старт: з {STRICT_FROM.isoformat()} це помилка]'", "note = ' [мʼякий старт]'"),
+ # ── канал листа --channel email
+ 'email: «**» не ловиться': ("    (re.compile(r'\\*\\*'), '«**» (жирне)'),\n", ""),
+ 'email: «__» не ловиться': ("    (re.compile(r'__'), '«__» (жирне)'),\n", ""),
+ 'email: «#» лише з пробілом після': ("    (re.compile(r'^[^\\S\\n]*#', re.M)", "    (re.compile(r'^[^\\S\\n]*#+ ', re.M)"),
+ 'email: «#» з відступом не ловиться': ("    (re.compile(r'^[^\\S\\n]*#', re.M)", "    (re.compile(r'^#', re.M)"),
+ 'email: чекбокс лише «- [ ]»': ("[-*+][^\\S\\n]*\\[[ xXхХ]?\\]", "-[^\\S\\n]+\\[ \\]"),
+ 'email: зворотні лапки не ловляться': ("    (re.compile(r'`'), 'зворотні лапки «`» (код)'),\n", ""),
+ 'email: розділювач таблиці лише з крайніми «|»': ("    sep = '|' in s and '-' in s and set(s) <= set('|:- \\t')", "    sep = s.startswith('|') and s.endswith('|') and '-' in s and set(s) <= set('|:- \\t')"),
+ 'email: рядок таблиці не ловиться': ("    return sep or (s.startswith('|') and s.count('|') >= 2)", "    return sep"),
+ 'email: тіло з початку файлу попри маркер': ("    start = next((i for i, x in enumerate(lines[:end]) if BODY_START in x), -1)", "    start = -1"),
+ 'email: «Для сейла» теж перевіряється': ("    end = next((i for i, x in enumerate(lines) if BODY_END in x), len(lines))", "    end = len(lines)"),
+ 'email: шапка не перевіряється': ("    client = [x for i, x in enumerate(lines[:end]) if i != start]", "    client = lines[start + 1:end]"),
+ 'email: розмітка і в документі': ("    if channel == 'email':\n        txt, body = letter_parts(txt)", "    if True:\n        txt, body = letter_parts(txt) if channel == 'email' else (txt, txt.split('\\n'))"),
+ 'email: розмітка лише попередження': ("            out.append((ERR, 'розмітка'", "            out.append((WARN, 'розмітка'"),
+ 'email: розмітка в мʼякому старті': ("PHASED = ('букви',", "PHASED = ('розмітка', 'букви',"),
+ '--channel ігнорується': ("        fs = findings(p, args.today, args.channel)", "        fs = findings(p, args.today)"),
+ '--today ігнорується': ("        fs = findings(p, args.today, args.channel)", "        fs = findings(p, None, args.channel)"),
 }
 bad=0
 for name,(a,b) in muts.items():
