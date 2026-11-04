@@ -23,6 +23,9 @@
 5. Канал листа `--channel email`: кейси `@email` у `cases.txt` (кожен E розмітка ще
    й у каналі doc, де розмітки бути не мусить), фікстури `tests/humizer/email/`,
    межі тіла листа (шапка, блок «Для сейла»), CLI.
+6. Шаблони листів: тіло шаблону кожного скіла з маркерами тіла листа (плейсхолдери
+   прибрано) проходить `--channel email` без помилок — інакше модель копіює розмітку
+   з шаблону, і перший же прогін червоний.
 
 Падає з кодом 1 і переліком того, що не спрацювало або спрацювало хибно.
 """
@@ -363,6 +366,59 @@ for bad in (['--channel', 'sms'], ['--today', STRICT.isoformat(), '--channel']):
     counts['email'] += 1
     if r.returncode != 2:
         fails.append(f'CLI {bad}: код {r.returncode}, очікувалась помилка аргументів (2)')
+
+# ── 6. шаблони листів у скілах
+def strip_placeholders(t):
+    """Прибрати [⚠️ ІНСТРУКЦІЯ: …] з вкладеними дужками, решту [плейсхолдерів] — на слово."""
+    out, i = [], 0
+    while i < len(t):
+        if t.startswith('[⚠️', i):
+            depth = 0
+            while i < len(t):
+                depth += t[i] == '['
+                depth -= t[i] == ']'
+                i += 1
+                if depth == 0:
+                    break
+            continue
+        out.append(t[i]); i += 1
+    return re.sub(r'\[[^\]\n]{1,60}\]', 'Андрій', ''.join(out))
+
+
+plugdir = os.path.join(ROOT, os.environ.get('PLUGDIR', 'plugins'))
+ours = [x.split('#')[0].strip() for x in open(os.path.join(ROOT, 'scripts', 'our-plugins.txt'), encoding='utf-8')]
+tpl = []
+for pl in filter(None, ours):
+    sk = os.path.join(plugdir, pl, 'skills')
+    for name in sorted(os.listdir(sk)) if os.path.isdir(sk) else []:
+        f = os.path.join(sk, name, 'SKILL.md')
+        if os.path.exists(f) and hz.BODY_START in open(f, encoding='utf-8').read():
+            tpl.append((name, f))
+counts['email'] += len(tpl)
+if len(tpl) < 2:
+    fails.append(f'шаблонів листа з маркером тіла знайдено {len(tpl)}, а скілів листа два — перевірка не діє')
+for name, f in tpl:
+    src = open(f, encoding='utf-8').read()
+    # маркер тіла — рядок-коментар шаблону; у прозі скіла ті самі слова стоять у `…`
+    m = re.search(rf'^<!--[^\n]*{hz.BODY_START}[^\n]*-->$(.*?)^<!--[^\n]*{hz.BODY_END}[^\n]*-->$', src, re.M | re.S)
+    body = m.group(1) if m else ''
+    if 'Добрий день' not in body:
+        fails.append(f'{name}: тіло шаблону між маркерами не знайдено (немає «Добрий день»)'); continue
+    p = os.path.join(tmp, 'tpl.md')
+    open(p, 'w', encoding='utf-8').write(f'<!-- {hz.BODY_START} -->\n{strip_placeholders(body)}\n<!-- {hz.BODY_END} -->\n')
+    fs = [x for x in hz.findings(p, STRICT, 'email') if x[0] == hz.ERR]
+    if fs:
+        fails.append(f'{name}: тіло шаблону листа не проходить --channel email → {show(fs)}')
+    # приклад листа в довіднику — те саме: модель вчиться на ньому не менше, ніж на шаблоні
+    ex = os.path.join(ROOT, 'shared', 'examples', name + '.md')
+    m = re.search(r'^## Вихід.*?^```\n(.*?)^```', open(ex, encoding='utf-8').read(), re.M | re.S) \
+        if os.path.exists(ex) else None
+    if m and 'Добрий день' in m.group(1):
+        counts['email'] += 1
+        open(p, 'w', encoding='utf-8').write(strip_placeholders(m.group(1)))
+        fs = [x for x in hz.findings(p, STRICT, 'email') if x[1] == 'розмітка']
+        if fs:
+            fails.append(f'shared/examples/{name}.md: лист у прикладі з розміткою → {show(fs)}')
 
 print(f"▸ Humizer: автокейсів по формах {counts['auto']} · ручних негативних {counts['neg']} · "
       f"позитивних {counts['pos']} · брудних фікстур {counts['dirty']} · чистих {counts['clean']} · "

@@ -87,6 +87,23 @@ else
   fi
 fi
 
+echo "▸ чекер листа (--channel email) із каталогу встановленого скіла"
+# скіл листа після демо .docx не віддає: чекер їде до нього окремо (sync-shared.sh)
+# -print -quit, а не `| head -1`: під pipefail конвеєр ловить SIGPIPE
+hz=$(find "$HOME/.claude/plugins/cache/$mkt" -path '*demo-followup-writer/scripts/check-humizer.py' -print -quit)
+if [ -z "$hz" ]; then
+  echo "  ✗ у кеші немає demo-followup-writer/scripts/check-humizer.py — чекер не поїхав зі скілом"; fail=1
+else
+  printf '<!-- ↓↓↓ ТІЛО ЛИСТА ПОЧИНАЄТЬСЯ ТУТ ↓↓↓ -->\nДобрий день!\n<!-- ↑↑↑ ТІЛО ЛИСТА ЗАКІНЧУЄТЬСЯ ТУТ ↑↑↑ -->\n' > "$tmp/l.md"
+  printf '<!-- ↓↓↓ ТІЛО ЛИСТА ПОЧИНАЄТЬСЯ ТУТ ↓↓↓ -->\n**Добрий день!**\n<!-- ↑↑↑ ТІЛО ЛИСТА ЗАКІНЧУЄТЬСЯ ТУТ ↑↑↑ -->\n' > "$tmp/lb.md"
+  if python3 "$hz" --channel email "$tmp/l.md" >/dev/null 2>&1 \
+     && ! python3 "$hz" --channel email "$tmp/lb.md" >/dev/null 2>&1; then
+    echo "  ✓ чистий лист проходить, розмітка в листі блокує"
+  else
+    echo "  ✗ чекер листа зі скіла не працює"; fail=1
+  fi
+fi
+
 echo "▸ ціна контексту (always-on)"
 tot=0
 for p in $(ours); do
