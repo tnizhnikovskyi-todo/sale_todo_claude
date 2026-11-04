@@ -20,6 +20,9 @@
    ті самі кейси на день раніше і на далекій даті до неї: класи PHASED дають
    попередження з датою, жодної помилки, і код виходу 0; старі правила блокують
    в обох режимах. Дата підставляється явно — тест не залежить від календаря.
+5. Канал листа `--channel email`: кейси `@email` у `cases.txt` (кожен E розмітка ще
+   й у каналі doc, де розмітки бути не мусить), фікстури `tests/humizer/email/`,
+   межі тіла листа (шапка, блок «Для сейла»), CLI.
 
 Падає з кодом 1 і переліком того, що не спрацювало або спрацювало хибно.
 """
@@ -49,11 +52,14 @@ fails = []
 counts = {'auto': 0, 'neg': 0, 'pos': 0, 'dirty': 0, 'clean': 0, 'soft': 0}
 
 
-def run(text, name='case.md', today=STRICT):
+def run(text, name='case.md', today=STRICT, channel='doc'):
     p = os.path.join(tmp, name)
     with open(p, 'w', encoding='utf-8') as f:
-        f.write('# Т\n\n' + text + '\n')
-    return hz.findings(p, today)
+        if channel == 'email':   # шапка чернетки з «#» — вище тіла, розмітки там не шукаємо
+            f.write(f'# Т\n\n<!-- ↓↓↓ {hz.BODY_START} ↓↓↓ -->\n\n' + text + '\n')
+        else:
+            f.write('# Т\n\n' + text + '\n')
+    return hz.findings(p, today, channel)
 
 
 def has(fs, lvl, cls):
@@ -122,10 +128,12 @@ for n, line in enumerate(open(case_file, encoding='utf-8'), 1):
     text = text.strip().replace('\\n', '\n')
     text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), text)
     head = head.split()
+    ch = 'email' if '@email' in head else 'doc'
+    head = [h for h in head if not h.startswith('@')]
     kind = head[0]
     if kind == 'OK':
         counts['pos'] += 1
-        fs = run(text)
+        fs = run(text, channel=ch)
         if fs:
             fails.append(f'cases.txt:{n} ХИБНЕ СПРАЦЮВАННЯ на «{text}» → {show(fs)}')
         elif VERBOSE:
@@ -133,14 +141,18 @@ for n, line in enumerate(open(case_file, encoding='utf-8'), 1):
     elif kind == 'NO':
         counts['pos'] += 1
         cls = head[1]
-        fs = run(text)
+        fs = run(text, channel=ch)
         if any(c == cls for _, c, _ in fs):
             fails.append(f'cases.txt:{n} ХИБНЕ [{cls}] на «{text}» → {show(fs)}')
     elif kind in (hz.ERR, hz.WARN):
         counts['neg'] += 1
         cls = head[1]
-        MANUAL.append((kind, cls, text, n))
-        fs = run(text)
+        MANUAL.append((kind, cls, text, n, ch))
+        fs = run(text, channel=ch)
+        if ch == 'email' and cls == 'розмітка':   # рішення 2: у документі це не помилка
+            counts['pos'] += 1
+            if any(c == 'розмітка' for _, c, _ in run(text)):
+                fails.append(f'cases.txt:{n} розмітка ловиться і без --channel email: «{text}»')
         if not has(fs, kind, cls):
             fails.append(f'cases.txt:{n} НЕ ЛОВИТЬ [{kind} {cls}] «{text}» → {show(fs)}')
         elif kind == hz.WARN and any(l == hz.ERR for l, _, _ in fs):
@@ -246,9 +258,9 @@ for i, (lvl, cls, v) in enumerate(AUTO):
     soft_ok(f'«{v!r}»', lvl, cls, run(v, today=SOFT))
     if i % 7 == 0:   # далека дата до старту — вибірково, логіка та сама
         soft_ok(f'«{v!r}» на {FAR_SOFT}', lvl, cls, run(v, today=FAR_SOFT))
-for lvl, cls, text, n in MANUAL:
+for lvl, cls, text, n, ch in MANUAL:
     counts['soft'] += 1
-    soft_ok(f'cases.txt:{n}', lvl, cls, run(text, today=SOFT))
+    soft_ok(f'cases.txt:{n}', lvl, cls, run(text, today=SOFT, channel=ch))
 # старі правила — блокують у будь-який день
 OLD = [('ID', 'Покривається налаштуванням, див. G-12.'), ('тег', 'Питання [КО] лишається відкритим.'),
        ('рівень', 'Ризик 🔴 високий.'), ('транскрипт', 'Speaker 2 зазначив, що потрібен облік.'),
@@ -293,9 +305,68 @@ r = subprocess.run([sys.executable, '-B', CHECKER, '--today', '19.11.2026', only
 if r.returncode != 2:
     fails.append(f'--today у чужому форматі прийнято (код {r.returncode})')
 
+# ── 5. канал листа
+counts['email'] = 0
+
+
+def cli_email(path, today=STRICT, channel='email'):
+    r = subprocess.run([sys.executable, '-B', CHECKER, '--today', today.isoformat(),
+                        '--channel', channel, path], capture_output=True, text=True)
+    return r.returncode, r.stdout
+
+
+em = os.path.join(fx, 'email')
+for d in (SOFT, STRICT):   # розмітка блокує завжди: мʼякого старту в неї немає
+    counts['email'] += 2
+    rc, out = cli_email(os.path.join(em, 'лист_чистий.md'), d)
+    if rc != 0 or '⚠' in out:
+        fails.append(f'email/лист_чистий.md на {d}: має бути чистим, а дає:\n{out}')
+    rc, out = cli_email(os.path.join(em, 'лист_розмітка.md'), d)
+    kinds = sum(1 for x in out.splitlines() if 'розмітка Markdown' in x)
+    if rc != 1 or kinds != 4:   # **, ## , таблиця, чекбокс
+        fails.append(f'email/лист_розмітка.md на {d}: код {rc}, видів розмітки {kinds} із 4:\n{out}')
+# той самий брудний лист як документ — розмітка не помилка
+rc, out = cli_email(os.path.join(em, 'лист_розмітка.md'), STRICT, 'doc')
+counts['email'] += 1
+if rc != 0 or 'розмітка Markdown' in out:
+    fails.append(f'email/лист_розмітка.md у каналі doc: код {rc}, а розмітка — не помилка документа:\n{out}')
+# межі тіла: шапка й блок «Для сейла»
+S, E = f'<!-- ↓↓↓ {hz.BODY_START} ↓↓↓ -->', f'<!-- ↑↑↑ {hz.BODY_END} ↑↑↑ -->'
+INTERNAL = '## ⛔ Для сейла\n\nСтоп-сигнал ST-1, див. G-12, коефіцієнт 0,8. **Жирне** і `код`.\n'
+letters = [
+    ('усе на місці', f'# Чернетка\n\n| Кому | Андрій |\n|---|---|\n\n{S}\n\nДобрий день!\n\n{E}\n\n{INTERNAL}', None),
+    ('розмітка в тілі', f'# Чернетка\n\n{S}\n\nДобрий **день**!\n\n{E}\n\n{INTERNAL}', 'розмітка'),
+    ('немає маркера початку — шапка з «#» стає тілом', f'# Чернетка\n\nДобрий день!\n\n{E}\n', 'розмітка'),
+    ('ID у темі листа (шапка йде клієнту)', f'# Чернетка\n\nТема: підсумки G-12\n\n{S}\n\nДобрий день!\n\n{E}\n', 'ID'),
+    ('ID у тілі', f'{S}\nДобрий день! Див. Q-7.\n{E}\n', 'ID'),
+    ('немає маркера кінця — «Для сейла» перевіряється', f'{S}\nДобрий день!\n\n{INTERNAL}', 'ID'),
+    ('маркер кінця вище маркера початку — тіла немає, шапка вся клієнтська', f'{E}\n{S}\n', None),
+    ('без маркерів — увесь файл тіло', 'Добрий день!\n\nЗ повагою,\nОлена\n', None),
+    ('без маркерів, із заголовком', '# Підсумки\n\nДобрий день!\n', 'розмітка'),
+]
+for name, text, want in letters:
+    p = os.path.join(tmp, 'letter.md')
+    open(p, 'w', encoding='utf-8').write(text)
+    fs = hz.findings(p, STRICT, 'email')
+    counts['email'] += 1
+    errs = {c for l, c, _ in fs if l == hz.ERR}
+    if want is None and errs:
+        fails.append(f'лист «{name}»: хибна помилка → {show(fs)}')
+    elif want and want not in errs:
+        fails.append(f'лист «{name}»: не спрацював [{want}] → {show(fs)}')
+    # поза каналом email файл перевіряється цілком, як раніше
+    if name == 'усе на місці' and not any(c == 'ID' for _, c, _ in hz.findings(p, STRICT)):
+        fails.append('лист у каналі doc: блок «Для сейла» вже не перевіряється — обрізання протекло')
+for bad in (['--channel', 'sms'], ['--today', STRICT.isoformat(), '--channel']):
+    r = subprocess.run([sys.executable, '-B', CHECKER, *bad, os.path.join(em, 'лист_чистий.md')],
+                       capture_output=True, text=True)
+    counts['email'] += 1
+    if r.returncode != 2:
+        fails.append(f'CLI {bad}: код {r.returncode}, очікувалась помилка аргументів (2)')
+
 print(f"▸ Humizer: автокейсів по формах {counts['auto']} · ручних негативних {counts['neg']} · "
       f"позитивних {counts['pos']} · брудних фікстур {counts['dirty']} · чистих {counts['clean']} · "
-      f"мʼякого старту {counts['soft']}")
+      f"мʼякого старту {counts['soft']} · листа {counts['email']}")
 for f in fails:
     print('  ✗', f)
 if fails:
